@@ -1,7 +1,8 @@
-# Tauri + React
+# Homework
 
-This template should help get you started developing with Tauri and React in Vite.
+The Tauri 2 + React desktop application.
 
-## Recommended IDE Setup
+Run it with `pnpm install` then `pnpm tauri dev`, from this directory.
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+See [`../specs/`](../specs/) for the technical stack, the functional specifications and the design guidelines, and
+[`../CLAUDE.md`](../CLAUDE.md) for the working conventions.
