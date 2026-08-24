@@ -1,0 +1,10 @@
+{
+  "shell": {
+    "cardTitle": "Homework",
+    "cardDescription": "Nothing to show yet.",
+    "cardBody": "The interface is not built yet — this shell only checks that the theme is wired.",
+    "primaryButton": "Primary",
+    "secondaryButton": "Secondary",
+    "outlineButton": "Outline"
+  }
+}

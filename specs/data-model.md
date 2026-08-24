@@ -36,7 +36,7 @@ displaying its real name forever, and so that a SQL export never refers to a cou
 -- intended shape, not a migration
 CREATE TABLE courses (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    name        TEXT NOT NULL CHECK (length(trim(name)) > 0),
+    name        TEXT NOT NULL CHECK (length(trim(name)) > 0),  -- see the note below: trim() strips spaces only
     archived_at TEXT,
     created_at  TEXT NOT NULL
 );
@@ -45,6 +45,10 @@ CREATE TABLE courses (
 -- that is what allows the user to re-create a course they previously deleted.
 CREATE UNIQUE INDEX courses_active_name ON courses (name) WHERE archived_at IS NULL;
 ```
+
+SQLite's `trim()` strips U+0020 and nothing else, so that `CHECK` rejects `'   '` but accepts a name made only of
+tabs, newlines or non-breaking spaces. The unique index does not normalise either, so `'Maths'` and `'Maths '` are two
+distinct active courses. Treat the constraint as a backstop, not as validation: the course form trims before it saves.
 
 Deleting a course in the user interface sets `archived_at`. Nothing ever issues `DELETE FROM courses`.
 
@@ -66,7 +70,7 @@ One homework entry. This is the central table and everything in the daily and we
 CREATE TABLE homework (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     text       TEXT NOT NULL,
-    due_date   TEXT NOT NULL CHECK (due_date GLOB '____-__-__'),
+    due_date   TEXT NOT NULL CHECK (due_date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'),
     course_id  INTEGER NOT NULL REFERENCES courses (id) ON DELETE RESTRICT,
     done       INTEGER NOT NULL DEFAULT 0 CHECK (done IN (0, 1)),
     created_at TEXT NOT NULL
@@ -75,6 +79,12 @@ CREATE TABLE homework (
 CREATE INDEX homework_due_date ON homework (due_date);
 CREATE INDEX homework_course_id ON homework (course_id);
 ```
+
+The `due_date` pattern spells `[0-9]` out eight times rather than writing `GLOB '____-__-__'`, which is what this
+document said until milestone 3 ran it. `_` is a **`LIKE`** wildcard, not a `GLOB` one: inside a `GLOB` pattern it is a
+literal underscore, so that constraint matched only the ten-character string `____-__-__` and rejected every real date.
+`LIKE '____-__-__'` would be the other way round — it matches any ten characters, so `abcd-ef-gh` would pass. The
+character classes are the only form that both accepts `2026-08-25` and rejects `2026-8-1`.
 
 `text` holds the Markdown source exactly as the student typed it. Never store rendered HTML and never store a
 sanitized or normalized variant: rendering is a display concern, and the database keeps the original characters so
@@ -94,16 +104,20 @@ Application preferences, as untyped key/value pairs so that adding a preference 
 
 | column  | type          | notes            |
 |---------|---------------|------------------|
-| `key`   | TEXT PK       |                  |
+| `key`   | TEXT PK NOT NULL | the `NOT NULL` is not redundant — see below |
 | `value` | TEXT NOT NULL | parsed by the reader |
 
 ```sql
 -- intended shape, not a migration
 CREATE TABLE settings (
-    key   TEXT PRIMARY KEY,
+    key   TEXT PRIMARY KEY NOT NULL,
     value TEXT NOT NULL
 );
 ```
+
+`key` is explicitly `NOT NULL`. In a non-`STRICT` SQLite table a `TEXT PRIMARY KEY` is nullable — a legacy quirk —
+so without it several rows with a `NULL` key can coexist, no `ON CONFLICT (key) DO UPDATE` can ever reach them, and
+no reader can ever read them back. A typo'd key constant would accumulate junk silently.
 
 Because a key may be absent, every reader defines its default in one place. Known keys:
 
@@ -127,10 +141,20 @@ Because a key may be absent, every reader defines its default in one place. Know
 3. `due_date` is always exactly ten characters and is never compared against an instant
 4. At most one active course exists per name; archived courses are exempt
 
-## Foreign keys are off by default
+## Foreign keys are enforced, and nothing has to do it
 
-SQLite does not enforce foreign keys unless `PRAGMA foreign_keys = ON` is issued **per connection**. Without it,
-invariant 1 is documentation rather than a constraint. Enable it when the connection is opened.
+SQLite does not enforce foreign keys unless `PRAGMA foreign_keys = ON` is issued **per connection**, which used to make
+this a thing the application had to remember. It is not, on this stack: `tauri-plugin-sql` runs on sqlx, and sqlx sets
+the pragma on every connection it puts in the pool. There is no code to write, and adding a one-off `PRAGMA` from
+JavaScript would be worse than useless — it would reach one pooled connection out of several and read as a guarantee.
+
+Checked behaviourally in milestone 3, against the real database, rather than by reading the pragma back:
+
+- inserting a `homework` row whose `course_id` does not exist fails with `(code: 787) FOREIGN KEY constraint failed`
+- `DELETE FROM courses` on a course that has homework fails with `(code: 1811) FOREIGN KEY constraint failed`, which is
+  `ON DELETE RESTRICT` firing
+
+So invariant 1 is a constraint, not documentation. Re-check this if the plugin ever stops using sqlx.
 
 ## Migrations
 
@@ -145,8 +169,10 @@ invariant 1 is documentation rather than a constraint. Enable it when the connec
 - An export contains `courses`, `homework` and `settings`, and nothing else. The plugin's bookkeeping table is
   excluded, so that a restore does not make the plugin believe migrations still need to run
 - The `N` in the export header is a constant in the application code, bumped in the same change that adds a
-  migration. Migrations run to completion at startup, so the running application constant is by definition the
-  version of the database it exports. An import whose header does not match that constant is refused rather than
+  migration. Migrations run when the database is first opened. The plugin connects lazily, so that
+  is the first query rather than application launch — and since milestone 4 the first query is the language read in
+  `src/main.jsx`, before the first render. The constant is therefore the version of the database from the moment the
+  window appears. An import whose header does not match that constant is refused rather than
   partially applied
 - A restore wipes and repopulates those three tables inside one transaction. It never drops or creates them, so the
   schema is always the one the migrations produced

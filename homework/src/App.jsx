@@ -1,49 +1,54 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+// Imported for its side effect: i18next has to be initialised before any
+// component calls `useTranslation`, and depending on the import order of
+// whoever renders this component would be a trap.
+import "@/i18n";
 
-function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+// `startupError` is the database failure `startLanguage` caught, or `null`. The
+// application renders either way — a database that cannot be opened must not
+// leave the student in front of a blank window.
+function App({ startupError = null }) {
+  const { t } = useTranslation();
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  // Held, not swallowed. `specs/functional-specs.md` requires a migration error
+  // at startup to be reported with a toast, and the toast component arrives with
+  // the drawer in milestone 6, which reads this prop. Logging it in the meantime
+  // is what keeps the failure findable rather than silent.
+  useEffect(() => {
+    if (startupError !== null) {
+      console.error("The database could not be opened at startup", startupError);
+    }
+  }, [startupError]);
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <main className="flex min-h-svh flex-col items-center justify-center gap-6 p-8">
+      {/* The application name is never translated. */}
+      <h1 className="text-2xl font-semibold tracking-tight">Devoirs2mat</h1>
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
+      <Card className="w-full max-w-md animate-in fade-in duration-500">
+        <CardHeader>
+          <CardTitle>{t("shell.cardTitle")}</CardTitle>
+          <CardDescription>{t("shell.cardDescription")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">{t("shell.cardBody")}</p>
+        </CardContent>
+        <CardFooter className="gap-2">
+          <Button>{t("shell.primaryButton")}</Button>
+          <Button variant="secondary">{t("shell.secondaryButton")}</Button>
+          <Button variant="outline">{t("shell.outlineButton")}</Button>
+        </CardFooter>
+      </Card>
     </main>
   );
 }

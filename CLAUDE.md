@@ -42,8 +42,6 @@ No linter or formatter is configured. Do not add one unless I ask for it.
 A change is done when `pnpm test` passes, `pnpm tauri dev` starts and you have actually exercised the screen you
 changed, `cargo check` passes if you touched Rust, and you have stated plainly what you did *not* verify.
 
-Until the test tooling is bootstrapped, `pnpm test` does not exist yet: say so rather than claiming it passed.
-
 ## Guidelines
 
 - Behave like an experienced / senior individual contributor
@@ -62,6 +60,9 @@ Until the test tooling is bootstrapped, `pnpm test` does not exist yet: say so r
 - When you follow a plan, always ensure you complete each and every step
 - Use a test-driven approach. If the behaviour you are about to test is not pinned down in `specs/`, stop and ask: do
   not invent the expected behaviour and freeze it in a test
+- Always brace control-flow blocks, even one-liners. `if (foo) { yolo(); }` over two or three lines, never
+  `if (foo) yolo();` and never a braceless body on the next line. This applies to `if`, `else`, `for` and `while`.
+  Generated files under `src/components/ui/` are exempt: they are not hand-edited
 - Favor minimal, surgical edits over big changes
 - Never over-engineer, focus on simple solutions that work
 - Prefer the JetBrains / WebStorm MCP tools (`mcp__webstorm__*`) over a combination of find, grep, awk and sed for

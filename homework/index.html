@@ -2,9 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tauri + React</title>
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      // Applied before first paint so a dark system never flashes the light
+      // palette. Inline and dependency-free by necessity: anything imported
+      // would run too late. `src/lib/theme.js` owns the class from here on.
+      try {
+        if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+          document.documentElement.classList.add("dark");
+        }
+      } catch (ignored) {}
+    </script>
+    <title>Devoirs2mat</title>
   </head>
 
   <body>

@@ -1,0 +1,10 @@
+{
+  "shell": {
+    "cardTitle": "Devoirs",
+    "cardDescription": "Rien à afficher pour l'instant.",
+    "cardBody": "L'interface n'est pas encore construite — cette coquille vérifie seulement que le thème est branché.",
+    "primaryButton": "Principal",
+    "secondaryButton": "Secondaire",
+    "outlineButton": "Contour"
+  }
+}
