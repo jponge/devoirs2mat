@@ -50,7 +50,7 @@ function NoCourses({ onAddCourse }) {
   );
 }
 
-function MainView({ onAddCourse }) {
+function MainView({ onAddCourse, onHomeworkError }) {
   const { t } = useTranslation();
   const { view, courses, loaded, error, errorCount } = useAppData();
   const report = useReportedOnce();
@@ -86,9 +86,9 @@ function MainView({ onAddCourse }) {
       {firstRun ? (
         <NoCourses onAddCourse={onAddCourse} />
       ) : view === "weekly" ? (
-        <WeeklyView />
+        <WeeklyView onError={onHomeworkError} />
       ) : (
-        <DailyView />
+        <DailyView onError={onHomeworkError} />
       )}
     </main>
   );
@@ -120,6 +120,19 @@ function App({ startupError = null }) {
     [t],
   );
 
+  // Deliberately its own function rather than a reuse of `reportWriteFailure`:
+  // that one is hardcoded to `errors.languageFailed` for its two existing
+  // callers (the language switch and the course editor), and reusing it here
+  // would show the wrong message for a failed homework write or a failed link
+  // open. Pre-existing mismatch, not something this milestone fixes.
+  const reportHomeworkFailure = useCallback(
+    (failure, kind) => {
+      toast.error(t(kind === "link" ? "errors.linkFailed" : "errors.saveFailed"));
+      console.error("a write failed", failure);
+    },
+    [t],
+  );
+
   return (
     <AppDataProvider>
       <div className="flex min-h-svh flex-col">
@@ -128,7 +141,7 @@ function App({ startupError = null }) {
           panelOpen={panelOpen}
           onPanelOpenChange={setPanelOpen}
         />
-        <MainView onAddCourse={() => setPanelOpen(true)} />
+        <MainView onAddCourse={() => setPanelOpen(true)} onHomeworkError={reportHomeworkFailure} />
       </div>
       <Toaster containerAriaLabel={t("topBar.notifications")} />
     </AppDataProvider>

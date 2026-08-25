@@ -16,7 +16,8 @@
     "weekly": "Weekly"
   },
   "homework": {
-    "empty": "Nothing due"
+    "empty": "Nothing due",
+    "toggleDone": "Mark as done"
   },
   "sidePanel": {
     "title": "Settings",
@@ -48,6 +49,8 @@
   "errors": {
     "startupFailed": "Couldn’t open your data. Try restarting the app.",
     "loadFailed": "Couldn’t load your homework.",
-    "languageFailed": "Couldn’t save the language."
+    "languageFailed": "Couldn’t save the language.",
+    "saveFailed": "Couldn’t save your change.",
+    "linkFailed": "Couldn’t open that link."
   }
 }

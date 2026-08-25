@@ -42,9 +42,10 @@ an empty state explaining that a course is needed first, with a button that open
 - A homework entry is displayed as a card, so an entry with empty text is still visible and clickable and can be
   edited afterwards. The due date and the course are never optional: only the text can be empty
 - The homework text is written and stored as Markdown, restricted to inline formatting: bold, italic, inline code,
-  strikethrough and links. Headings, lists, tables, images and raw HTML are deliberately not supported, and anything
-  outside the supported subset is displayed as the literal characters the student typed. This keeps a card to a
-  single, predictable paragraph
+  strikethrough and links. Headings, lists, tables, images and raw HTML are deliberately not supported: only the
+  inline subset above is ever rendered specially, and any other Markdown construct is unwrapped to plain text —
+  `react-markdown`'s own `allowedElements` restriction, not a bespoke fallback that reproduces the markup characters
+  themselves. This keeps a card to a single, predictable paragraph
 - Markdown is rendered the same way in the daily and the weekly views
 - A link inside a homework text opens in the system browser, and never navigates the application window
 - Every card carries a checkbox, always visible and never hidden behind hover: completing homework is the most

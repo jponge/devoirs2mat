@@ -5,7 +5,7 @@ import { useAppData } from "@/components/app-data";
 import { CourseGroup, EmptyLine } from "@/components/course-group";
 import { groupByCourse } from "@/lib/grouping";
 
-export function DailyView() {
+export function DailyView({ onError }) {
   const { t, i18n } = useTranslation();
   const { homework, courses, selectedDate } = useAppData();
 
@@ -23,7 +23,7 @@ export function DailyView() {
       {groups.length === 0 ? (
         <EmptyLine>{t("homework.empty")}</EmptyLine>
       ) : (
-        groups.map((group) => <CourseGroup key={group.course.id} group={group} />)
+        groups.map((group) => <CourseGroup key={group.course.id} group={group} onError={onError} />)
       )}
     </section>
   );

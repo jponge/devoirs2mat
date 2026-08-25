@@ -206,10 +206,11 @@ thing.
   utility-looking string in a test — the word "transform" in a comment was enough to ship a `.transform` rule — and,
   worse, a test could conjure a class that production code then silently depends on. `src/theme-css.test.js` guards
   all of this, because every one of these regressions is otherwise silent
-- Generated shadcn components live in `src/components/ui/` and are not edited by hand. As of milestone 7 they are
-  `button`, `card`, `sheet`, `popover`, `calendar`, `toggle`, `toggle-group`, `separator`, `sonner`, `input` and
-  `alert-dialog`. The last two cost no new dependency: this preset generates against the unified `radix-ui` package,
-  which `sheet` and `popover` already pull in
+- Generated shadcn components live in `src/components/ui/` and are not edited by hand. As of milestone 8 they are
+  `button`, `card`, `sheet`, `popover`, `calendar`, `toggle`, `toggle-group`, `separator`, `sonner`, `input`,
+  `alert-dialog` and `checkbox`. None of them cost a new dependency: this preset generates against the unified
+  `radix-ui` package, which is already installed and which every one of them pulls from — verified for `checkbox` by
+  diffing `package.json` before and after running `add`, rather than assumed
 - **The side panel is the `sheet` component, not `drawer`.** The functional specifications call it a drawer as a
   word; the component that matches what they describe is `sheet`. It is built on the Radix dialog, so `Escape` and
   outside-click dismissal come for free and are never re-implemented, and it needs no new dependency because
@@ -229,12 +230,24 @@ thing.
 - Failures are reported with the preset's toast component. The functional specifications say when a toast is used
   rather than an inline message
 - Homework text is Markdown, rendered with `react-markdown` and restricted to the inline subset defined in the
-  functional specifications, using `allowedElements`. Raw HTML is never enabled: no `rehype-raw`, and no
-  `dangerouslySetInnerHTML` anywhere in the code base. Rendering to React elements rather than to an HTML string is
-  what makes user text unable to become live markup inside the webview, and it is why no separate sanitizer is needed
+  functional specifications (`p`, `strong`, `em`, `code`, `del`, `a`), using `allowedElements` with
+  `unwrapDisallowed`. `del` is what `remark-gfm`'s strikethrough (`~~text~~`) maps to — strikethrough is GFM syntax,
+  not core CommonMark, which is the whole reason `remark-gfm` is a dependency. `remark-gfm` also enables tables,
+  autolinks and task lists, none of which is wanted, but `allowedElements` filters those out before they reach the
+  DOM. Raw HTML is never enabled: no `rehype-raw`, and no `dangerouslySetInnerHTML` anywhere in the code base.
+  Rendering to React elements rather than to an HTML string is what makes user text unable to become live markup
+  inside the webview, and it is why no separate sanitizer is needed. A heading, list, blockquote, table or image is
+  not given special rendering, but `unwrapDisallowed` keeps its inline children rather than dropping them outright —
+  `# Devoir` renders as `Devoir`, not as a heading and not reproduced with its `#`
 - Links inside homework text are opened in the system browser with `@tauri-apps/plugin-opener`, which is already a
   dependency. They must never navigate the application webview, which would unmount the application. Opening a link
-  is a user action and does not contradict the offline rule: the application itself still never needs the network
+  is a user action and does not contradict the offline rule: the application itself still never needs the network.
+  There is no content-security policy behind any of this — `"csp"` in `tauri.conf.json` is deliberately `null` — so
+  the link guard in `src/components/course-group.jsx` is the whole of the defence: it reads `href` from the props
+  `react-markdown` hands its `a` component (already run through the library's own default URL transform), never from
+  `node.properties.href` on the underlying AST, and then allow-lists the scheme through
+  `src/lib/markdown-links.js` (`http:`, `https:`, `mailto:`) before the link ever reaches `openUrl`. A disallowed
+  scheme renders as plain text, not as a dead link
 
 ### How Tailwind CSS and the shadcn preset were set up
 
@@ -334,6 +347,13 @@ Added by milestone 6, at the versions resolved on 2026-08-25:
 | `sonner` | 2.0.8 | prod | what the registry generates for toasts; the deprecated `toast` is gone |
 | `next-themes` | 0.4.6 | prod | installed by the CLI, **not chosen** — see below |
 
+Added by milestone 8, at the versions resolved on 2026-08-26:
+
+| package | version | where | why |
+|---|---|---|---|
+| `react-markdown` | 10.1.0 | prod | renders homework text to React elements, restricted to the inline subset |
+| `remark-gfm` | 4.0.1 | prod | strikethrough (`~~text~~`) is GFM syntax, not core CommonMark |
+
 Three things about those are worth knowing, because none of them is what you would guess:
 
 - **`react-day-picker` brings `date-fns` with it**, as its own dependency. It is *not* a direct dependency of this
@@ -393,8 +413,8 @@ Three of those are worth knowing about, because they are not what you would gues
 - `components/` — our own components
 - `db/` — database queries and mutations
 - `i18n/` — `en.json`, `fr.json` and the i18next setup
-- `lib/` — pure helpers (dates, `Intl` date formatting, grouping, course-name validation, SQL import and export, the
-  system-theme mirror, the `<html lang>` mirror), where most of the tests
+- `lib/` — pure helpers (dates, `Intl` date formatting, grouping, course-name validation, the homework-link scheme
+  allow-list, SQL import and export, the system-theme mirror, the `<html lang>` mirror), where most of the tests
   live. `lib/utils.js` is generated by shadcn and is the exception: it is not hand-edited. `lib/dates.js` and
   `lib/format-dates.js` split deliberately: the first does arithmetic and knows nothing about language, the second
   does language and does no arithmetic. `lib/courses.js` holds the course-name trimming and duplicate check that

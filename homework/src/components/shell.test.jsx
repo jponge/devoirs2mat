@@ -6,14 +6,15 @@ import { formatFullDate, formatWeekRange } from "@/lib/format-dates";
 import en from "@/i18n/en.json";
 import fr from "@/i18n/fr.json";
 
-const { listCourses, listHomeworkBetween } = vi.hoisted(() => ({
+const { listCourses, listHomeworkBetween, setHomeworkDone } = vi.hoisted(() => ({
   listCourses: vi.fn(),
   listHomeworkBetween: vi.fn(),
+  setHomeworkDone: vi.fn(),
 }));
 const { setLanguage } = vi.hoisted(() => ({ setLanguage: vi.fn() }));
 
 vi.mock("@/db/courses", () => ({ listCourses }));
-vi.mock("@/db/homework", () => ({ listHomeworkBetween }));
+vi.mock("@/db/homework", () => ({ listHomeworkBetween, setHomeworkDone }));
 // `setLanguage` is the real bridge to the database; the panel is tested against
 // the call, not against a write it cannot perform here.
 vi.mock("@/i18n/preference", () => ({ setLanguage }));
@@ -23,6 +24,7 @@ beforeEach(async () => {
   // first-run empty state instead of the day or the week.
   listCourses.mockResolvedValue([{ id: 1, name: "Maths", archived_at: null }]);
   listHomeworkBetween.mockResolvedValue([]);
+  setHomeworkDone.mockResolvedValue(undefined);
   setLanguage.mockImplementation(async (language) => {
     await i18n.changeLanguage(language);
   });
@@ -600,5 +602,37 @@ describe("the first run", () => {
 
     await waitFor(() => expect(screen.getByText(en.errors.loadFailed)).not.toBeNull());
     expect(screen.queryByText(en.courses.noneTitle)).toBeNull();
+  });
+});
+
+describe("a failing homework write in the weekly view", () => {
+  // `App.test.jsx` covers this same chain (App → MainView → DailyView →
+  // CourseGroup) for the daily view, which is where a new mount always starts.
+  // WeeklyView → DayBlock → CourseGroup is a second, structurally identical
+  // chain that a daily-only test cannot reach — a dropped `onError` prop on
+  // this path was previously invisible to the suite.
+  it("toasts through the weekly-view chain rather than failing silently", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    listHomeworkBetween.mockResolvedValue([
+      {
+        id: 1,
+        text: "Exercice 4 page 12",
+        due_date: "2026-08-25",
+        course_id: 1,
+        done: 0,
+        created_at: "2026-08-20T08:00:00Z",
+      },
+    ]);
+    setHomeworkDone.mockRejectedValue(new Error("database is locked"));
+
+    await mount();
+    goWeekly();
+    const checkbox = await screen.findByRole("checkbox");
+
+    fireEvent.click(checkbox);
+
+    await waitFor(() => {
+      expect(screen.getByText(en.errors.saveFailed)).not.toBeNull();
+    });
   });
 });

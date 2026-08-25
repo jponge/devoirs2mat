@@ -16,7 +16,8 @@
     "weekly": "Semaine"
   },
   "homework": {
-    "empty": "Rien à rendre"
+    "empty": "Rien à rendre",
+    "toggleDone": "Marquer comme fait"
   },
   "sidePanel": {
     "title": "Réglages",
@@ -48,6 +49,8 @@
   "errors": {
     "startupFailed": "Impossible d’ouvrir tes données. Essaie de relancer l’application.",
     "loadFailed": "Impossible de charger tes devoirs.",
-    "languageFailed": "Impossible d’enregistrer la langue."
+    "languageFailed": "Impossible d’enregistrer la langue.",
+    "saveFailed": "Impossible d’enregistrer ta modification.",
+    "linkFailed": "Impossible d’ouvrir ce lien."
   }
 }

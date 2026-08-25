@@ -7,19 +7,21 @@ import fr from "@/i18n/fr.json";
 
 // The Tauri SQL plugin only exists inside the Tauri runtime, so the data layer
 // is faked, as `specs/technical-stack.md` requires for component tests.
-const { listCourses, listHomeworkBetween } = vi.hoisted(() => ({
+const { listCourses, listHomeworkBetween, setHomeworkDone } = vi.hoisted(() => ({
   listCourses: vi.fn(),
   listHomeworkBetween: vi.fn(),
+  setHomeworkDone: vi.fn(),
 }));
 
 vi.mock("@/db/courses", () => ({ listCourses }));
-vi.mock("@/db/homework", () => ({ listHomeworkBetween }));
+vi.mock("@/db/homework", () => ({ listHomeworkBetween, setHomeworkDone }));
 
 beforeEach(async () => {
   // At least one course, deliberately: with none, the main view shows the
   // first-run empty state instead of the day or the week.
   listCourses.mockResolvedValue([{ id: 1, name: "Maths", archived_at: null }]);
   listHomeworkBetween.mockResolvedValue([]);
+  setHomeworkDone.mockResolvedValue(undefined);
   await i18n.changeLanguage("en");
 });
 
@@ -108,6 +110,35 @@ describe("a failing read", () => {
 
     await waitFor(() => {
       expect(screen.getByText(en.errors.loadFailed)).not.toBeNull();
+    });
+  });
+});
+
+describe("a failing homework write", () => {
+  // Catches a dropped `onError` prop anywhere in App → MainView → DailyView →
+  // CourseGroup, the same reasoning `boot.test.jsx` applies to `startupError`.
+  it("toasts through the whole chain rather than failing silently", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    listHomeworkBetween.mockResolvedValue([
+      {
+        id: 1,
+        text: "Exercice 4 page 12",
+        due_date: "2026-08-25",
+        course_id: 1,
+        done: 0,
+        created_at: "2026-08-20T08:00:00Z",
+      },
+    ]);
+    setHomeworkDone.mockRejectedValue(new Error("database is locked"));
+
+    render(<App />);
+    await settle();
+    const checkbox = await screen.findByRole("checkbox");
+
+    checkbox.click();
+
+    await waitFor(() => {
+      expect(screen.getByText(en.errors.saveFailed)).not.toBeNull();
     });
   });
 });

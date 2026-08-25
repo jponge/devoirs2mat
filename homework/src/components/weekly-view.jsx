@@ -14,7 +14,7 @@ import { groupWeek } from "@/lib/grouping";
 import { weekDays } from "@/lib/dates";
 import { formatDayHeading } from "@/lib/format-dates";
 
-function DayBlock({ day, language }) {
+function DayBlock({ day, language, onError }) {
   const { t } = useTranslation();
 
   return (
@@ -27,14 +27,14 @@ function DayBlock({ day, language }) {
         <EmptyLine>{t("homework.empty")}</EmptyLine>
       ) : (
         day.groups.map((group) => (
-          <CourseGroup key={group.course.id} group={group} />
+          <CourseGroup key={group.course.id} group={group} onError={onError} />
         ))
       )}
     </section>
   );
 }
 
-export function WeeklyView() {
+export function WeeklyView({ onError }) {
   const { i18n } = useTranslation();
   const { selectedDate, homework, courses } = useAppData();
 
@@ -47,16 +47,16 @@ export function WeeklyView() {
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-      <DayBlock day={monday} language={i18n.language} />
-      <DayBlock day={tuesday} language={i18n.language} />
-      <DayBlock day={wednesday} language={i18n.language} />
-      <DayBlock day={thursday} language={i18n.language} />
-      <DayBlock day={friday} language={i18n.language} />
+      <DayBlock day={monday} language={i18n.language} onError={onError} />
+      <DayBlock day={tuesday} language={i18n.language} onError={onError} />
+      <DayBlock day={wednesday} language={i18n.language} onError={onError} />
+      <DayBlock day={thursday} language={i18n.language} onError={onError} />
+      <DayBlock day={friday} language={i18n.language} onError={onError} />
       {/* The empty right-hand cell that keeps the weekend paired on the row
           below. It carries no content and is not announced. */}
       <div aria-hidden="true" />
-      <DayBlock day={saturday} language={i18n.language} />
-      <DayBlock day={sunday} language={i18n.language} />
+      <DayBlock day={saturday} language={i18n.language} onError={onError} />
+      <DayBlock day={sunday} language={i18n.language} onError={onError} />
     </div>
   );
 }
