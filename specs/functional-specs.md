@@ -11,13 +11,16 @@ without a restart, and always wins over detection afterwards.
 
 ## Dates
 
-- A due date is a calendar date, with no time and no time zone. It is stored as `TEXT` in `YYYY-MM-DD` form. Never use
-  `Date` arithmetic or epoch milliseconds for it: that is how a homework item due on Monday ends up displayed on
-  Sunday
-- The week runs from Monday to Saturday, in both languages. The week start is always Monday and is never derived from
+- A due date is a calendar date, with no time and no time zone. It is stored as `TEXT` in `YYYY-MM-DD` form. Never do
+  the arithmetic in local time and never store a due date as epoch milliseconds: a local day is not always
+  86 400 000 ms long once a daylight-saving transition falls inside it, and that is how a homework item due on Monday
+  ends up displayed on Sunday. `src/lib/dates.js` shifts days in UTC, where a day always is, and reads the local clock
+  in exactly two places — answering what today is, and building the `Date` handed to `Intl` for display
+- The week runs from Monday to Sunday, in both languages. The week start is always Monday and is never derived from
   the locale, otherwise the weekly view would reshape itself when the user switches language
-- The weekly view shows six day blocks, Monday to Saturday. Previous / next week shifts by exactly seven days,
-  previous / next day shifts by one day and never skips weekends
+- The weekly view shows seven day blocks, Monday to Sunday. Sunday closes the week that began on the Monday before it,
+  so every date belongs to exactly one week. Previous / next week shifts by exactly seven days, previous / next day
+  shifts by one day and never skips weekends
 - The current day is the local system date. It does not need to refresh by itself at midnight
 
 ## First run
@@ -50,8 +53,10 @@ an empty state explaining that a course is needed first, with a button that open
 - When a homework entry is completed, it still shows in the current day or weekly view. It stays exactly where it is —
   completion never removes it and never reorders it — and it is displayed checked, with muted and struck-through text
 - In a weekly view, we have blocks per-day, and homework entries are grouped under matching courses. The day blocks
-  are laid out on **two columns**: Monday and Tuesday, then Wednesday and Thursday, then Friday and Saturday. A block
-  grows with its content and the page scrolls — a day block never scrolls on its own
+  are laid out on **two columns**: Monday and Tuesday, then Wednesday and Thursday, then Friday on its own, then
+  Saturday and Sunday. Friday sits in the left column with the right-hand cell left empty, so that the weekend stays
+  paired. A block grows with its content and
+  the page scrolls — a day block never scrolls on its own
 - The daily view groups entries by course in the same way and with the same component: a course heading, its cards
   underneath, courses in alphabetical order
 - An area with no homework — an empty day block, or an empty daily view — shows a short muted line rather than nothing

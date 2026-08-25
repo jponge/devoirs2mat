@@ -112,8 +112,12 @@ thing.
 - The `test` block sets `restoreMocks`, `unstubGlobals` and `unstubEnvs`, so spies and stubbed globals do not leak
   between tests. Milestone 3's module-level fakes for the SQL plugin depend on this
 - `TZ` is pinned to `Europe/Paris` in the `test` block. Deliberately not UTC: the wrong-day bugs the date helpers
-  exist to prevent only appear in an offset zone, so a UTC pin would hide exactly what those tests are for. Date
-  helpers should still take an explicit "today" argument rather than reading the clock, the same way
+  exist to prevent only appear in an offset zone, so a UTC pin would hide exactly what those tests are for. Paris is
+  not sufficient on its own, though, and the pin must not be trusted as if it were: it is a *positive* offset, where
+  UTC midnight always falls on the same local calendar day, so a helper reading the local day parts instead of the UTC
+  ones passes every Paris test there is. Each date helper therefore also needs a test that stubs `TZ` to a
+  negative-offset zone — `vi.stubEnv("TZ", "America/New_York")`, which `unstubEnvs` restores — and asserts the same
+  answers. Date helpers should still take an explicit "today" argument rather than reading the clock, the same way
   `startSystemThemeSync` takes `win`
 - Never assert a module's constant against itself (`expect(fn).toHaveBeenCalledWith(DARK_QUERY)` where `DARK_QUERY`
   is imported from the module under test). That is unfalsifiable — inverting the constant keeps the suite green. Pin

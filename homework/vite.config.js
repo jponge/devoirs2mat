@@ -38,7 +38,10 @@ export default defineConfig(async () => ({
     unstubEnvs: true,
     // Pinned so date behaviour is reproducible off this machine. Deliberately
     // NOT UTC: milestone 5's wrong-day bugs only appear in an offset zone, so
-    // pinning UTC would hide exactly what those tests exist to catch.
+    // pinning UTC would hide exactly what those tests exist to catch. Paris is a
+    // POSITIVE offset, though, where UTC midnight always falls on the same local
+    // day — that hides a class of mistake of its own, so `dates.test.js` stubs a
+    // negative-offset zone for one test of its own.
     env: { TZ: "Europe/Paris" },
     exclude: ["**/node_modules/**", "**/dist/**", "**/src-tauri/**"],
   },

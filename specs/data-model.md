@@ -16,7 +16,11 @@ Conventions used everywhere:
 Mixing these up is the single most likely source of wrong-day bugs, so they are deliberately different types of value:
 
 - **Calendar dates** (`homework.due_date`) are `YYYY-MM-DD`, with no time and no time zone. A due date is "Tuesday the
-  9th", not an instant. Never convert one to UTC, never build it from a `Date`, never store it as epoch milliseconds
+  9th", not an instant. Never store one as epoch milliseconds, and never do the arithmetic in local time: a local day
+  is not always 86 400 000 ms long once a daylight-saving transition falls inside it. Shifting a day goes through
+  `src/lib/dates.js`, which does it in UTC — where a day always is exactly that long — and comes back to `YYYY-MM-DD`
+  before the value goes anywhere near the database. A `Date` is a private intermediate inside that module, never a
+  stored and never a displayed value
 - **Instants** (`created_at`, `archived_at`) are ISO-8601 UTC strings such as `2026-08-21T09:14:03Z`. They record when
   something happened in the application and are never shown as a due date
 
