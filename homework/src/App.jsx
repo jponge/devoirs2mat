@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
@@ -6,6 +6,8 @@ import { AppDataProvider, useAppData } from "@/components/app-data";
 import { TopBar } from "@/components/top-bar";
 import { DailyView } from "@/components/daily-view";
 import { WeeklyView } from "@/components/weekly-view";
+import { Button } from "@/components/ui/button";
+import { isActiveCourse } from "@/lib/courses";
 // Imported for its side effect: i18next has to be initialised before any
 // component calls `useTranslation`, and depending on the import order of
 // whoever renders this component would be a trap.
@@ -33,9 +35,24 @@ function useReportedOnce() {
   }, []);
 }
 
-function MainView() {
+// The first-run state: a course is mandatory, so homework cannot exist until
+// one does. `specs/functional-specs.md` requires the explanation and the button
+// that opens the side panel on the course editor.
+function NoCourses({ onAddCourse }) {
   const { t } = useTranslation();
-  const { view, error, errorCount } = useAppData();
+
+  return (
+    <div className="flex flex-col items-center gap-3 py-16 text-center">
+      <h2 className="text-lg font-medium">{t("courses.noneTitle")}</h2>
+      <p className="max-w-sm text-sm text-muted-foreground">{t("courses.noneBody")}</p>
+      <Button onClick={onAddCourse}>{t("courses.noneAction")}</Button>
+    </div>
+  );
+}
+
+function MainView({ onAddCourse }) {
+  const { t } = useTranslation();
+  const { view, courses, loaded, error, errorCount } = useAppData();
   const report = useReportedOnce();
 
   // A read that failed is a failure the student cannot act on, so it toasts.
@@ -53,9 +70,26 @@ function MainView() {
     console.error("a read failed", error);
   }, [errorCount, error, report, t]);
 
+  // Neither view has to know about the empty state, which is why it branches
+  // here. It waits for the first read to settle — `loaded`, not `loading`, so a
+  // later refetch cannot blink it away — and stays away after a failure: a
+  // database that could not be read is not a student with no courses, and
+  // telling them to create one would be a lie.
+  // Active courses, not all of them: the context deliberately keeps archived
+  // rows so a homework entry can still show its course name. Counting those
+  // here would strand a student who deleted their only course in a view with no
+  // way back to the button that creates one.
+  const firstRun = !courses.some(isActiveCourse) && loaded && errorCount === 0;
+
   return (
     <main className="flex-1 p-4">
-      {view === "weekly" ? <WeeklyView /> : <DailyView />}
+      {firstRun ? (
+        <NoCourses onAddCourse={onAddCourse} />
+      ) : view === "weekly" ? (
+        <WeeklyView />
+      ) : (
+        <DailyView />
+      )}
     </main>
   );
 }
@@ -70,6 +104,9 @@ function MainView() {
 function App({ startupError = null }) {
   const { t } = useTranslation();
   const report = useReportedOnce();
+  // The panel's open state is lifted here because the first-run empty state
+  // opens it from the main view, which is not inside it.
+  const [panelOpen, setPanelOpen] = useState(false);
 
   useEffect(() => {
     report(startupError, t("errors.startupFailed"));
@@ -86,8 +123,12 @@ function App({ startupError = null }) {
   return (
     <AppDataProvider>
       <div className="flex min-h-svh flex-col">
-        <TopBar onError={reportWriteFailure} />
-        <MainView />
+        <TopBar
+          onError={reportWriteFailure}
+          panelOpen={panelOpen}
+          onPanelOpenChange={setPanelOpen}
+        />
+        <MainView onAddCourse={() => setPanelOpen(true)} />
       </div>
       <Toaster containerAriaLabel={t("topBar.notifications")} />
     </AppDataProvider>

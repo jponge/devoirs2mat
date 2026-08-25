@@ -6,12 +6,12 @@
 // Escape and outside-click dismissal come from the Radix dialog underneath and
 // are deliberately not re-implemented here.
 //
-// In this milestone it carries the language switch only. The course editor
-// lands in milestone 7, below the separator.
+// It carries the language switch and, below the separator, the course editor.
 import { useTranslation } from "react-i18next";
 import { MenuIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { CourseEditor } from "@/components/course-editor";
 import {
   Sheet,
   SheetContent,
@@ -23,10 +23,14 @@ import {
 import { SUPPORTED_LANGUAGES } from "@/i18n/language";
 import { setLanguage } from "@/i18n/preference";
 
+// `open` / `onOpenChange` are controlled by the caller rather than left to the
+// sheet's own state: the first-run empty state in the main view opens this panel
+// from outside it.
+//
 // `onError` rather than a toast raised here: a write that failed is reported by
 // whoever owns the toaster, and keeping this component free of that decision is
 // what lets it be tested without one.
-export function SidePanel({ onError = () => {} }) {
+export function SidePanel({ onError = () => {}, open, onOpenChange }) {
   const { t, i18n } = useTranslation();
 
   const choose = async (language) => {
@@ -40,13 +44,30 @@ export function SidePanel({ onError = () => {} }) {
   };
 
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" aria-label={t("topBar.openSidePanel")}>
           <MenuIcon />
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-80">
+      <SheetContent
+        side="right"
+        className="w-80"
+        // Radix listens for Escape in the CAPTURE phase on the document, so a
+        // field cannot stop it by stopping propagation — by the time the field
+        // sees the event the sheet has already decided to close. This is the
+        // sanctioned way to say otherwise.
+        //
+        // The marker, rather than "any focused input": a field only claims
+        // Escape when it has something to cancel, and says so itself. Claiming
+        // it for every input made the panel un-closeable by keyboard the moment
+        // the empty add field took focus, which nothing ever blurs.
+        onEscapeKeyDown={(event) => {
+          if (event.target?.dataset?.cancelsEscape === "true") {
+            event.preventDefault();
+          }
+        }}
+      >
         <SheetHeader>
           <SheetTitle>{t("sidePanel.title")}</SheetTitle>
           <SheetDescription>{t("sidePanel.description")}</SheetDescription>
@@ -72,8 +93,9 @@ export function SidePanel({ onError = () => {} }) {
           </div>
         </div>
 
-        {/* Milestone 7 puts the course editor here. */}
         <Separator className="my-2" />
+
+        <CourseEditor onError={onError} />
       </SheetContent>
     </Sheet>
   );

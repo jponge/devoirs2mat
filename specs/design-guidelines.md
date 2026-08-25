@@ -6,3 +6,11 @@
 - Follow the system appearance: both the light and the dark palettes of the preset are used, and there is no
   in-application theme switch
 - An empty area shows a short muted line rather than nothing at all, so that it reads as deliberate
+- **The interface speaks to a 6–18 year old student, not to an administrator.** Write plainly and warmly, without
+  being goofy: no jokes, no exclamation marks, no mascot voice. Prefer the active voice and a short sentence —
+  "Couldn’t load your homework." over "Homework could not be loaded." Address the student directly.
+    - **French uses `tu`, never `vous`.** A child is not a customer. This applies to every string, including error
+      messages
+    - Say what happened and what to do about it, in that order, and never blame the student for a failure that was
+      not theirs
+    - Use the typographic apostrophe `’` in both languages, never the straight `'`

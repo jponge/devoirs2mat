@@ -16,7 +16,9 @@ vi.mock("@/db/courses", () => ({ listCourses }));
 vi.mock("@/db/homework", () => ({ listHomeworkBetween }));
 
 beforeEach(async () => {
-  listCourses.mockResolvedValue([]);
+  // At least one course, deliberately: with none, the main view shows the
+  // first-run empty state instead of the day or the week.
+  listCourses.mockResolvedValue([{ id: 1, name: "Maths", archived_at: null }]);
   listHomeworkBetween.mockResolvedValue([]);
   await i18n.changeLanguage("en");
 });

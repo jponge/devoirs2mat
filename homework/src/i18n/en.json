@@ -5,7 +5,7 @@
     "previousWeek": "Previous week",
     "nextWeek": "Next week",
     "chooseDate": "Choose a date",
-    "openSidePanel": "Open the side panel",
+    "openSidePanel": "Open settings",
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
     "calendarNav": "Calendar",
@@ -20,16 +20,34 @@
   },
   "sidePanel": {
     "title": "Settings",
-    "description": "Language, courses and your data.",
+    "description": "Your language, your courses, your data.",
     "language": "Language"
+  },
+  "courses": {
+    "title": "Courses",
+    "namePlaceholder": "New course…",
+    "add": "Add",
+    "rename": "Rename {{name}}",
+    "delete": "Delete {{name}}",
+    "saveRename": "Save the name",
+    "cancelRename": "Cancel",
+    "nameEmpty": "Give the course a name.",
+    "nameDuplicate": "You already have a course called that.",
+    "deleteTitle": "Delete “{{name}}”?",
+    "deleteBody": "Homework in this course keeps the name, greyed out. You can’t undo this.",
+    "deleteConfirm": "Delete",
+    "deleteCancel": "Cancel",
+    "noneTitle": "No courses yet",
+    "noneBody": "Every piece of homework goes in a course. Add one to get started.",
+    "noneAction": "Add a course"
   },
   "language": {
     "en": "English",
     "fr": "Français"
   },
   "errors": {
-    "startupFailed": "Your data could not be opened. Restarting the application may fix it.",
-    "loadFailed": "Homework could not be loaded.",
-    "languageFailed": "The language could not be saved."
+    "startupFailed": "Couldn’t open your data. Try restarting the app.",
+    "loadFailed": "Couldn’t load your homework.",
+    "languageFailed": "Couldn’t save the language."
   }
 }

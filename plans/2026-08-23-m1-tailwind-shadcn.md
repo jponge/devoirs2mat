@@ -1,4 +1,4 @@
-Status: approved
+Status: done
 
 # Milestone 1 — Tailwind CSS and the shadcn preset
 
@@ -174,7 +174,7 @@ Executed by a subagent, then reviewed by three subagents (architecture, quality 
   step 3 (wiring) had to run before plan step 1 (init). Recorded in `specs/technical-stack.md`.
 - **Three dependencies landed that the approval table did not name**, all CLI-driven rather than chosen:
   `radix-ui` (the umbrella, instead of the planned `@radix-ui/react-slot`), `shadcn` itself as a *runtime*
-  dependency, and `@fontsource-variable/inter`. These need Julien's retroactive ratification — see the open
+  dependency, and `@fontsource-variable/inter`. All three were ratified retroactively on 2026-08-25 — see the open
   decisions below.
 - **The preset was verified, not assumed.** `preset decode b7W7uXIq8` reports style `luma` / baseColor `taupe`, and
   the adversarial review reproduced the whole recipe from `git archive HEAD` and got byte-identical output. `init`
@@ -197,15 +197,27 @@ Executed by a subagent, then reviewed by three subagents (architecture, quality 
 
 ### Open decisions for Julien
 
-1. Ratify or reject the three unplanned dependencies.
-2. `shadcn` is `^4.19.0` in `dependencies` while being build-time-only. Pin it exactly and move it to
-   `devDependencies`, or run `pnpm dlx shadcn@latest eject` to inline `shadcn/tailwind.css` and drop it entirely?
-   Ejecting is cheapest now, against two components, rather than after milestone 6 adds several more.
-3. `"csp": null` in `tauri.conf.json` leaves the offline rule audited rather than enforced. It matters once
-   user-authored Markdown lands in milestone 8.
+1. ~~Ratify or reject the three unplanned dependencies.~~ **Settled 2026-08-25**: all three ratified —
+   `radix-ui` (the umbrella, which has since let `sheet`, `popover`, `alert-dialog` and `toggle-group` land with no
+   new dependency), `@fontsource-variable/inter` (bundled, so the application never fetches a font over the network),
+   and `shadcn` (build-time, pinned exactly, in `devDependencies` since the same day).
+2. ~~`shadcn` is `^4.19.0` in `dependencies` while being build-time-only.~~ **Settled 2026-08-25**: pinned to the
+   exact `4.19.0` and moved to `devDependencies`. Eject was rejected — it freezes those Tailwind utilities at today's
+   version and hands us their maintenance, per https://ui.shadcn.com/docs/cli#eject. The move left the built CSS
+   bundle byte-identical.
+3. ~~`"csp": null` in `tauri.conf.json` leaves the offline rule audited rather than enforced.~~ **Settled
+   2026-08-25**: keep the Tauri default, which is exactly `null`. The Markdown subset milestone 8 ships carries no
+   images and no raw HTML, so a policy would have nothing to refuse. The one real hole in that area is what an
+   external link's URL scheme is allowed to be before it reaches the system opener, and a CSP does not close it —
+   milestone 8 owns that guard.
 
-### Not verified
+### The palette check, discharged 2026-08-25
 
-The rendered window has not been seen in either palette. This environment has neither Accessibility nor Screen
-Recording permission, so the light/dark check remains a human eyeball, as the plan's "Known verification gap" said.
-`pnpm test` does not exist until milestone 2.
+Julien confirmed the dark palette renders correctly, having seen it in the running application during milestone 7;
+the light palette has been seen throughout milestones 1 to 7. That was the last item of this milestone's definition
+of done, which is why the status is now `done`.
+
+**The three open decisions above are still open** and are not blocked by anything here. Decision 2 has aged: ejecting
+`shadcn` was cheapest against two generated components, and milestones 6 and 7 have since taken the list to eleven.
+
+`pnpm test` did not exist until milestone 2, so this milestone was never covered by it.

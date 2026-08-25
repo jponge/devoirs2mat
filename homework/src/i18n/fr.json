@@ -5,7 +5,7 @@
     "previousWeek": "Semaine précédente",
     "nextWeek": "Semaine suivante",
     "chooseDate": "Choisir une date",
-    "openSidePanel": "Ouvrir le panneau latéral",
+    "openSidePanel": "Ouvrir les réglages",
     "previousMonth": "Mois précédent",
     "nextMonth": "Mois suivant",
     "calendarNav": "Calendrier",
@@ -20,16 +20,34 @@
   },
   "sidePanel": {
     "title": "Réglages",
-    "description": "La langue, les matières et vos données.",
+    "description": "Ta langue, tes matières, tes données.",
     "language": "Langue"
+  },
+  "courses": {
+    "title": "Matières",
+    "namePlaceholder": "Nouvelle matière…",
+    "add": "Ajouter",
+    "rename": "Renommer {{name}}",
+    "delete": "Supprimer {{name}}",
+    "saveRename": "Enregistrer le nom",
+    "cancelRename": "Annuler",
+    "nameEmpty": "Donne un nom à la matière.",
+    "nameDuplicate": "Tu as déjà une matière avec ce nom.",
+    "deleteTitle": "Supprimer « {{name}} » ?",
+    "deleteBody": "Les devoirs de cette matière gardent ce nom, en grisé. Tu ne pourras pas revenir en arrière.",
+    "deleteConfirm": "Supprimer",
+    "deleteCancel": "Annuler",
+    "noneTitle": "Aucune matière",
+    "noneBody": "Chaque devoir va dans une matière. Ajoutes-en une pour commencer.",
+    "noneAction": "Ajouter une matière"
   },
   "language": {
     "en": "English",
     "fr": "Français"
   },
   "errors": {
-    "startupFailed": "Vos données n'ont pas pu être ouvertes. Relancer l'application peut résoudre le problème.",
-    "loadFailed": "Les devoirs n'ont pas pu être chargés.",
-    "languageFailed": "La langue n'a pas pu être enregistrée."
+    "startupFailed": "Impossible d’ouvrir tes données. Essaie de relancer l’application.",
+    "loadFailed": "Impossible de charger tes devoirs.",
+    "languageFailed": "Impossible d’enregistrer la langue."
   }
 }

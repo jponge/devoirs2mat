@@ -53,6 +53,11 @@ export function AppDataProvider({
   const [courses, setCourses] = useState([]);
   const [homework, setHomework] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Sticky, unlike `loading`: true once the first read has settled, and never
+  // false again. `loading` returns to true on every refetch, so a view that used
+  // it to decide whether it has data would blink its empty state away each time
+  // the range changes.
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(null);
   // `src/db/client.js` caches a rejected `Database.load`, so every read after a
   // failed migration rejects with the *same* `Error` instance. `setError` then
@@ -97,6 +102,7 @@ export function AppDataProvider({
         setHomework(loadedHomework);
         setError(null);
         setLoading(false);
+        setLoaded(true);
       },
       (failure) => {
         if (cancelled) {
@@ -108,6 +114,7 @@ export function AppDataProvider({
         setError(failure);
         setErrorCount((count) => count + 1);
         setLoading(false);
+        setLoaded(true);
       },
     );
 
@@ -160,6 +167,7 @@ export function AppDataProvider({
       courses,
       homework,
       loading,
+      loaded,
       error,
       errorCount,
       setView,
@@ -168,7 +176,7 @@ export function AppDataProvider({
       goNext,
       reload,
     }),
-    [selectedDate, view, from, to, courses, homework, loading, error, errorCount, setView, selectDate, goPrevious, goNext, reload],
+    [selectedDate, view, from, to, courses, homework, loading, loaded, error, errorCount, setView, selectDate, goPrevious, goNext, reload],
   );
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;

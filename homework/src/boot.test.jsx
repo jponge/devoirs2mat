@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { screen, act, waitFor } from "@testing-library/react";
 import { boot, reportLateStartupFailure } from "@/boot";
+// The catalogue, not a copy of it: the wording of a user-facing string is not
+// what these tests are about, and pinning a fragment of it here made an
+// editorial pass fail three unrelated tests.
+import en from "@/i18n/en.json";
 
 // The data layer is faked: the Tauri SQL plugin only exists inside the Tauri
 // runtime, and `boot` now renders the real application, which reads on mount.
@@ -55,7 +59,7 @@ describe("boot", () => {
     // Reported as a toast, which is what `specs/functional-specs.md` requires
     // for a migration error at startup.
     await waitFor(() => {
-      expect(screen.getByText(/could not be opened/i)).not.toBeNull();
+      expect(screen.getByText(en.errors.startupFailed)).not.toBeNull();
     });
     expect(logged.mock.calls.flat()).toContain(failure);
   });
@@ -68,7 +72,7 @@ describe("boot", () => {
     });
 
     expect(logged).not.toHaveBeenCalled();
-    expect(screen.queryByText(/could not be opened/i)).toBeNull();
+    expect(screen.queryByText(en.errors.startupFailed)).toBeNull();
   });
 
   // `boot` renders under `StrictMode`, which double-mounts effects in
@@ -83,7 +87,7 @@ describe("boot", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getAllByText(/could not be opened/i)).toHaveLength(1);
+      expect(screen.getAllByText(en.errors.startupFailed)).toHaveLength(1);
     });
   });
 });
@@ -100,14 +104,14 @@ describe("a startup failure that arrives late", () => {
       boot(freshContainer());
     });
     // The application rendered clean: the deadline settled without an error.
-    expect(screen.queryByText(/could not be opened/i)).toBeNull();
+    expect(screen.queryByText(en.errors.startupFailed)).toBeNull();
 
     await act(async () => {
       reportLateStartupFailure(new Error("the migration failed, eventually"));
     });
 
     await waitFor(() => {
-      expect(screen.getByText(/could not be opened/i)).not.toBeNull();
+      expect(screen.getByText(en.errors.startupFailed)).not.toBeNull();
     });
     expect(logged).toHaveBeenCalled();
   });
@@ -123,7 +127,7 @@ describe("a startup failure that arrives late", () => {
       reportLateStartupFailure(undefined);
     });
 
-    expect(screen.queryByText(/could not be opened/i)).toBeNull();
+    expect(screen.queryByText(en.errors.startupFailed)).toBeNull();
     expect(logged).not.toHaveBeenCalled();
   });
 });

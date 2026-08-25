@@ -7,14 +7,17 @@ import { DateNavigator } from "@/components/date-navigator";
 import { SidePanel } from "@/components/side-panel";
 import { useAppData, VIEWS } from "@/components/app-data";
 
-export function TopBar({ onError }) {
+export function TopBar({ onError, panelOpen, onPanelOpenChange }) {
   const { t } = useTranslation();
   const { view, setView } = useAppData();
 
   return (
-    <header className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-      {/* Never translated, in either language. */}
-      <h1 className="text-lg font-semibold tracking-tight">Devoirs2mat</h1>
+    <header className="flex flex-wrap items-center justify-end gap-3 border-b px-4 py-3">
+      {/* The window title already names the application; showing it again here
+          was clutter. The heading stays for screen readers, so the document
+          still has an `h1` above the `h2` day headings, and is never
+          translated in either language. */}
+      <h1 className="sr-only">Devoirs2mat</h1>
 
       <div className="flex flex-wrap items-center gap-3">
         <DateNavigator />
@@ -35,7 +38,7 @@ export function TopBar({ onError }) {
           ))}
         </ToggleGroup>
 
-        <SidePanel onError={onError} />
+        <SidePanel onError={onError} open={panelOpen} onOpenChange={onPanelOpenChange} />
       </div>
     </header>
   );

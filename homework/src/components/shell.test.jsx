@@ -19,7 +19,9 @@ vi.mock("@/db/homework", () => ({ listHomeworkBetween }));
 vi.mock("@/i18n/preference", () => ({ setLanguage }));
 
 beforeEach(async () => {
-  listCourses.mockResolvedValue([]);
+  // At least one course, deliberately: with none, the main view shows the
+  // first-run empty state instead of the day or the week.
+  listCourses.mockResolvedValue([{ id: 1, name: "Maths", archived_at: null }]);
   listHomeworkBetween.mockResolvedValue([]);
   setLanguage.mockImplementation(async (language) => {
     await i18n.changeLanguage(language);
@@ -456,5 +458,147 @@ describe("the daily view", () => {
 
     await waitFor(() => expect(screen.getByText(en.homework.empty)).not.toBeNull());
     expect(screen.queryByTestId("homework-item")).toBeNull();
+  });
+});
+
+describe("the course editor in the panel", () => {
+  const openPanel = () =>
+    fireEvent.click(screen.getByRole("button", { name: en.topBar.openSidePanel }));
+
+  it("is reachable from the side panel", async () => {
+    await mount();
+
+    openPanel();
+
+    await waitFor(() => expect(screen.getByText(en.courses.title)).not.toBeNull());
+    expect(screen.getByText("Maths")).not.toBeNull();
+  });
+
+  // Escape belongs to the open field. The sheet underneath must not also take
+  // it and close the whole panel from under the student.
+  it("keeps the panel open when Escape cancels a rename", async () => {
+    await mount();
+    openPanel();
+    await waitFor(() => expect(screen.getByText(en.courses.title)).not.toBeNull());
+    fireEvent.click(
+      screen.getByRole("button", { name: en.courses.rename.replace("{{name}}", "Maths") }),
+    );
+    const field = await screen.findByDisplayValue("Maths");
+
+    fireEvent.keyDown(field, { key: "Escape" });
+
+    await waitFor(() => expect(screen.queryByDisplayValue("Maths")).toBeNull());
+    expect(screen.getByText(en.courses.title)).not.toBeNull();
+  });
+
+  // The trap: nothing blurs the add field after it handles Escape, so claiming
+  // Escape for any focused input left the panel un-closeable by keyboard for
+  // the rest of the session once that field had been touched.
+  it("still closes the panel on Escape from the empty add field", async () => {
+    await mount();
+    openPanel();
+    await waitFor(() => expect(screen.getByText(en.courses.title)).not.toBeNull());
+    const field = screen.getByLabelText(en.courses.namePlaceholder);
+    field.focus();
+
+    fireEvent.keyDown(field, { key: "Escape" });
+
+    await waitFor(() => expect(screen.queryByText(en.courses.title)).toBeNull());
+  });
+
+  // Once something has been typed there IS something to cancel, so that Escape
+  // clears the draft and the panel stays put.
+  it("keeps the panel open when Escape clears a typed draft", async () => {
+    await mount();
+    openPanel();
+    await waitFor(() => expect(screen.getByText(en.courses.title)).not.toBeNull());
+    const field = screen.getByLabelText(en.courses.namePlaceholder);
+    fireEvent.change(field, { target: { value: "Histoire" } });
+
+    fireEvent.keyDown(field, { key: "Escape" });
+
+    await waitFor(() => expect(field.value).toBe(""));
+    expect(screen.getByText(en.courses.title)).not.toBeNull();
+  });
+
+  // And Escape with no field open still closes the panel, as it always did.
+  it("still closes the panel on Escape outside a field", async () => {
+    await mount();
+    openPanel();
+    await waitFor(() => expect(screen.getByText(en.courses.title)).not.toBeNull());
+
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+
+    await waitFor(() => expect(screen.queryByText(en.courses.title)).toBeNull());
+  });
+});
+
+describe("the first run", () => {
+  // A course is mandatory, so homework cannot exist until one does.
+  it("explains that a course is needed, in place of the day", async () => {
+    listCourses.mockResolvedValue([]);
+
+    await mount();
+
+    expect(await screen.findByText(en.courses.noneTitle)).not.toBeNull();
+    expect(screen.queryByText(en.homework.empty)).toBeNull();
+  });
+
+  it("replaces the weekly view too", async () => {
+    listCourses.mockResolvedValue([]);
+    await mount();
+    await screen.findByText(en.courses.noneTitle);
+
+    goWeekly();
+
+    expect(screen.queryAllByTestId("day-block")).toHaveLength(0);
+    expect(screen.getByText(en.courses.noneTitle)).not.toBeNull();
+  });
+
+  it("opens the side panel on the course editor", async () => {
+    listCourses.mockResolvedValue([]);
+    await mount();
+
+    fireEvent.click(await screen.findByRole("button", { name: en.courses.noneAction }));
+
+    await waitFor(() => expect(screen.getByText(en.courses.title)).not.toBeNull());
+  });
+
+  // `loaded` is what holds it back until the first read settles. Without that,
+  // the very first frame claims there are no courses on a database that may
+  // well have some — the flash of a wrong screen, and a lie while it lasts.
+  it("stays away while the first read is still in flight", async () => {
+    listCourses.mockReturnValue(new Promise(() => {}));
+    listHomeworkBetween.mockReturnValue(new Promise(() => {}));
+
+    render(<App />);
+
+    await waitFor(() => expect(listHomeworkBetween).toHaveBeenCalled());
+    expect(screen.queryByText(en.courses.noneTitle)).toBeNull();
+  });
+
+  // `courses` carries archived rows too — that is what keeps a homework entry's
+  // course name alive. Counting them here would strand a student who deleted
+  // their only course in a view with no way back to the button that makes one.
+  it("comes back when the last active course is archived", async () => {
+    listCourses.mockResolvedValue([
+      { id: 1, name: "Maths", archived_at: "2026-08-25T10:00:00Z" },
+    ]);
+
+    await mount();
+
+    expect(await screen.findByText(en.courses.noneTitle)).not.toBeNull();
+  });
+
+  // A database that could not be read is not a student with no courses, and
+  // telling them to create one would be a lie.
+  it("stays away when the read failed", async () => {
+    listCourses.mockRejectedValue(new Error("database unavailable"));
+    listHomeworkBetween.mockRejectedValue(new Error("database unavailable"));
+
+    render(<App />);
+
+    await waitFor(() => expect(screen.getByText(en.errors.loadFailed)).not.toBeNull());
+    expect(screen.queryByText(en.courses.noneTitle)).toBeNull();
   });
 });
