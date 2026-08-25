@@ -1,14 +1,23 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import App from "@/App";
 import i18n from "@/i18n";
 import en from "@/i18n/en.json";
 import fr from "@/i18n/fr.json";
 
-// A smoke test in the literal sense: rendering `App` at all exercises jsdom, the
-// JSX transform and the `@/` alias into `@/components/ui/*`. If the tooling is
-// mis-wired, this file fails before any assertion is reached.
+// The Tauri SQL plugin only exists inside the Tauri runtime, so the data layer
+// is faked, as `specs/technical-stack.md` requires for component tests.
+const { listCourses, listHomeworkBetween } = vi.hoisted(() => ({
+  listCourses: vi.fn(),
+  listHomeworkBetween: vi.fn(),
+}));
+
+vi.mock("@/db/courses", () => ({ listCourses }));
+vi.mock("@/db/homework", () => ({ listHomeworkBetween }));
+
 beforeEach(async () => {
+  listCourses.mockResolvedValue([]);
+  listHomeworkBetween.mockResolvedValue([]);
   await i18n.changeLanguage("en");
 });
 
@@ -18,63 +27,85 @@ afterEach(async () => {
   await i18n.changeLanguage("en");
 });
 
+const settle = () => waitFor(() => expect(listHomeworkBetween).toHaveBeenCalled());
+
 describe("App", () => {
-  it("shows the application name", () => {
+  it("shows the application name", async () => {
     render(<App />);
+    await settle();
 
     // Never translated, in either language.
     expect(screen.getByRole("heading", { name: "Devoirs2mat" })).not.toBeNull();
   });
 
-  it("shows the placeholder card in English", () => {
+  it("starts in the daily view", async () => {
     render(<App />);
+    await settle();
 
-    expect(screen.getByText(en.shell.cardTitle)).not.toBeNull();
-    expect(screen.getByText(en.shell.cardDescription)).not.toBeNull();
+    const daily = screen.getByRole("radio", { name: en.view.daily });
+    expect(daily.getAttribute("aria-checked")).toBe("true");
   });
 
-  it("renders the generated shadcn buttons", () => {
+  it("shows the muted empty line rather than nothing at all", async () => {
     render(<App />);
+    await settle();
 
-    const labels = screen
-      .getAllByRole("button")
-      .map((button) => button.textContent);
-
-    expect(labels).toEqual([
-      en.shell.primaryButton,
-      en.shell.secondaryButton,
-      en.shell.outlineButton,
-    ]);
+    expect(screen.getByText(en.homework.empty)).not.toBeNull();
   });
 
-  it("shows the shell in French once the language changes", async () => {
+  it("follows a language change with no remount", async () => {
     render(<App />);
-    expect(screen.getByText(en.shell.cardTitle)).not.toBeNull();
+    await settle();
+    expect(screen.getByText(en.homework.empty)).not.toBeNull();
 
     await i18n.changeLanguage("fr");
 
-    // No remount, no restart: the change takes effect where the component is.
-    expect(screen.getByText(fr.shell.cardTitle)).not.toBeNull();
-    expect(screen.queryByText(en.shell.cardDescription)).toBeNull();
+    expect(screen.getByText(fr.homework.empty)).not.toBeNull();
+    expect(screen.queryByText(en.homework.empty)).toBeNull();
   });
 
   // Translated, not left as a key: a missing catalogue entry renders its own
   // key, which every assertion above would happily accept.
-  it("never leaves a translation key on screen", () => {
+  it("never leaves a translation key on screen", async () => {
     render(<App />);
+    await settle();
 
-    expect(screen.queryByText(/shell\./)).toBeNull();
+    expect(screen.queryByText(/^(topBar|view|homework|sidePanel|errors)\./)).toBeNull();
   });
 });
 
 describe("App with a startup failure", () => {
-  it("still renders the shell, and reports the error rather than hiding it", () => {
-    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+  it("still renders the shell, and toasts rather than hiding the failure", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     const failure = new Error("no such table: settings");
 
     render(<App startupError={failure} />);
+    await settle();
 
+    // A database that cannot be opened must not leave a blank window.
     expect(screen.getByRole("heading", { name: "Devoirs2mat" })).not.toBeNull();
-    expect(logged).toHaveBeenCalledWith(expect.any(String), failure);
+    await waitFor(() => {
+      expect(screen.getByText(en.errors.startupFailed)).not.toBeNull();
+    });
+  });
+
+  it("says nothing when startup succeeded", async () => {
+    render(<App />);
+    await settle();
+
+    expect(screen.queryByText(en.errors.startupFailed)).toBeNull();
+  });
+});
+
+describe("a failing read", () => {
+  it("is reported, never silent", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    listHomeworkBetween.mockRejectedValue(new Error("no such table: homework"));
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText(en.errors.loadFailed)).not.toBeNull();
+    });
   });
 });

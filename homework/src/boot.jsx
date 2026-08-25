@@ -3,11 +3,13 @@
 // `main.jsx` runs its side effects at module scope, which is why nothing may
 // import it from a test. That makes the one link actually carrying a startup
 // failure to the user — the `startupError` prop — untestable if it lives there,
-// and milestone 6's context refactor is exactly the kind of change that would
-// quietly drop it.
+// and the shared context is exactly the kind of refactor that would quietly
+// drop it. It stays a prop for that reason.
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { toast } from "sonner";
 import App from "@/App";
+import i18n from "@/i18n";
 import { startSystemThemeSync } from "@/lib/theme";
 
 // Returns the React root so a test can unmount it; leaked roots are a classic
@@ -26,4 +28,21 @@ export function boot(container, startupError = null) {
   startSystemThemeSync();
 
   return root;
+}
+
+// The startup failure that arrived AFTER the deadline, through `resolveStartup`'s
+// `onLate`. By then `App` has already rendered with no error — the deadline
+// settled with the detected language — so nothing downstream will ever report
+// it, and `specs/functional-specs.md` is explicit that a failure is never
+// silent.
+//
+// Toasting from outside React works because sonner keeps its queue in a
+// module-level store: the mounted `<Toaster>` picks this up wherever it is
+// raised from.
+export function reportLateStartupFailure(error) {
+  if (error === undefined || error === null) {
+    return;
+  }
+  toast.error(i18n.t("errors.startupFailed"));
+  console.error("the database answered late, with an error", error);
 }

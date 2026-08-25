@@ -21,9 +21,8 @@ import {
 // Returns `{ language, error }`. `error` is the database failure, if there was
 // one, and it is **returned rather than swallowed**: `specs/functional-specs.md`
 // requires a migration error at startup to reach the student as a toast, and the
-// toast arrives with the drawer in milestone 6. Until then the caller holds it.
-// A failure never stops the application from rendering — it renders in the
-// detected language instead.
+// caller is what turns it into one. A failure never stops the application from
+// rendering — it renders in the detected language instead.
 export async function startLanguage(locales = webviewLocales()) {
   let stored = null;
   let error = null;

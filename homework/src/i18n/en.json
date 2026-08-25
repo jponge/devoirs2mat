@@ -1,10 +1,35 @@
 {
-  "shell": {
-    "cardTitle": "Homework",
-    "cardDescription": "Nothing to show yet.",
-    "cardBody": "The interface is not built yet — this shell only checks that the theme is wired.",
-    "primaryButton": "Primary",
-    "secondaryButton": "Secondary",
-    "outlineButton": "Outline"
+  "topBar": {
+    "previousDay": "Previous day",
+    "nextDay": "Next day",
+    "previousWeek": "Previous week",
+    "nextWeek": "Next week",
+    "chooseDate": "Choose a date",
+    "openSidePanel": "Open the side panel",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "calendarNav": "Calendar",
+    "notifications": "Notifications"
+  },
+  "view": {
+    "daily": "Daily",
+    "weekly": "Weekly"
+  },
+  "homework": {
+    "empty": "Nothing due"
+  },
+  "sidePanel": {
+    "title": "Settings",
+    "description": "Language, courses and your data.",
+    "language": "Language"
+  },
+  "language": {
+    "en": "English",
+    "fr": "Français"
+  },
+  "errors": {
+    "startupFailed": "Your data could not be opened. Restarting the application may fix it.",
+    "loadFailed": "Homework could not be loaded.",
+    "languageFailed": "The language could not be saved."
   }
 }

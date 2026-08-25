@@ -65,7 +65,7 @@ describe("startLanguage", () => {
 
     const { error } = await startLanguage([]);
 
-    // Milestone 6 renders this as a toast. Losing it here would make the
+    // `App` renders this as a toast. Losing it here would make the
     // failure silent, which the functional specifications forbid.
     expect(error).toBe(failure);
   });

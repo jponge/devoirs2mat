@@ -1,10 +1,35 @@
 {
-  "shell": {
-    "cardTitle": "Devoirs",
-    "cardDescription": "Rien à afficher pour l'instant.",
-    "cardBody": "L'interface n'est pas encore construite — cette coquille vérifie seulement que le thème est branché.",
-    "primaryButton": "Principal",
-    "secondaryButton": "Secondaire",
-    "outlineButton": "Contour"
+  "topBar": {
+    "previousDay": "Jour précédent",
+    "nextDay": "Jour suivant",
+    "previousWeek": "Semaine précédente",
+    "nextWeek": "Semaine suivante",
+    "chooseDate": "Choisir une date",
+    "openSidePanel": "Ouvrir le panneau latéral",
+    "previousMonth": "Mois précédent",
+    "nextMonth": "Mois suivant",
+    "calendarNav": "Calendrier",
+    "notifications": "Notifications"
+  },
+  "view": {
+    "daily": "Jour",
+    "weekly": "Semaine"
+  },
+  "homework": {
+    "empty": "Rien à rendre"
+  },
+  "sidePanel": {
+    "title": "Réglages",
+    "description": "La langue, les matières et vos données.",
+    "language": "Langue"
+  },
+  "language": {
+    "en": "English",
+    "fr": "Français"
+  },
+  "errors": {
+    "startupFailed": "Vos données n'ont pas pu être ouvertes. Relancer l'application peut résoudre le problème.",
+    "loadFailed": "Les devoirs n'ont pas pu être chargés.",
+    "languageFailed": "La langue n'a pas pu être enregistrée."
   }
 }

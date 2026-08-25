@@ -122,9 +122,21 @@ thing.
 - Never assert a module's constant against itself (`expect(fn).toHaveBeenCalledWith(DARK_QUERY)` where `DARK_QUERY`
   is imported from the module under test). That is unfalsifiable — inverting the constant keeps the suite green. Pin
   the literal string instead
-- jsdom implements none of `ResizeObserver`, `IntersectionObserver`, `Element.prototype.scrollIntoView` or
-  `hasPointerCapture`, all of which the Radix components behind shadcn's drawer, select and dialog use. Milestone 6
-  will need polyfills in `src/test-setup.js`; this is expected, not a bug to investigate
+- jsdom implements neither `window.matchMedia` nor several APIs the components behind the preset use. Polyfills live
+  in `src/test-setup.js` and nowhere else, and each one is added only after a test has failed without it — a polyfill
+  for an API nothing uses outlives the reason it was added and nobody dares delete it. As of milestone 6 the list is
+  **one entry**: `window.matchMedia`, which sonner's `<Toaster>` calls to resolve `theme="system"`. Unlike
+  `startSystemThemeSync`, which takes an injectable `win` precisely so it needs no global, the Toaster is
+  third-party and there is nowhere to inject. It does not weaken `src/lib/theme.test.js`, which builds its own
+  `fakeWin` and passes it explicitly. The Radix components turned out to need none of `ResizeObserver`,
+  `IntersectionObserver`, `scrollIntoView` or `hasPointerCapture` under the interactions the tests drive — do not add
+  them pre-emptively
+- **sonner keeps its toasts in a module-level store that React Testing Library's `cleanup` knows nothing about.**
+  Unmounting the `<Toaster>` leaves the queue intact, so the next test to mount one re-renders every toast its
+  predecessors raised: a test asserting "no toast" then fails because of its neighbours, and a test counting toasts
+  counts theirs too. `src/test-setup.js` calls `toast.dismiss()` after each test and waits one animation frame, which
+  is when the store is really empty. That hook is guarded on having a DOM, because the same setup file runs for the
+  `// @vitest-environment node` tests
 - Colours and layout are never asserted on: that needs a real browser, and there is no WebDriver setup. Light and
   dark rendering stays a human check. What *is* pinned down is the wiring — `src/theme-css.test.js` guards the
   imports and the `@custom-variant dark` line in `src/index.css`, whose loss would break every `dark:` utility with
@@ -160,9 +172,9 @@ thing.
   run for the first time
 - `startLanguage` therefore owns the startup failure path: a database that cannot be opened comes back as
   `{ language, error }` rather than as a rejection. The application still renders, in the *detected* language, and
-  the error is handed to `App` as `startupError`, which **holds** it. `specs/functional-specs.md` requires it to be
-  reported with a toast; the toast component arrives with the drawer in milestone 6, which owes the user that report.
-  Do not turn the error into a silent `catch`
+  the error is handed to `App` as `startupError`, which reports it as a toast (`errors.startupFailed`), deduped
+  against StrictMode's double mount. A failure that arrives after the first render goes through
+  `reportLateStartupFailure` in `boot.jsx`. Do not turn the error into a silent `catch`
 - A startup failure is never persisted and detection is never written back: `settings.language` stays absent until
   the user actually picks a language
 - `src/i18n/catalogs.test.js` asserts that `en.json` and `fr.json` have **identical key sets**, recursively. English
@@ -194,7 +206,13 @@ thing.
   utility-looking string in a test — the word "transform" in a comment was enough to ship a `.transform` rule — and,
   worse, a test could conjure a class that production code then silently depends on. `src/theme-css.test.js` guards
   all of this, because every one of these regressions is otherwise silent
-- Generated shadcn components live in `src/components/ui/` and are not edited by hand
+- Generated shadcn components live in `src/components/ui/` and are not edited by hand. As of milestone 6 they are
+  `button`, `card`, `sheet`, `popover`, `calendar`, `toggle`, `toggle-group`, `separator` and `sonner`
+- **The side panel is the `sheet` component, not `drawer`.** The functional specifications call it a drawer as a
+  word; the component that matches what they describe is `sheet`. It is built on the Radix dialog, so `Escape` and
+  outside-click dismissal come for free and are never re-implemented, and it needs no new dependency because
+  `radix-ui` is already installed. `drawer` would pull `vaul` in to get a mobile bottom-sheet with drag-to-dismiss,
+  which is the wrong affordance on a desktop window
 - The theme follows the system appearance, using the preset's light and dark palettes. There is no theme switch, so
   nothing about the theme is stored in the database. The preset puts its dark palette behind a `.dark` class and
   emits no `prefers-color-scheme` media query, so the operating system setting is mirrored onto `<html class="dark">`
@@ -306,6 +324,37 @@ by the CLI rather than chosen, and were ratified after the fact:
 | `shadcn` | 4.19.0 | prod |
 | `@fontsource-variable/inter` | 5.3.0 | prod |
 
+Added by milestone 6, at the versions resolved on 2026-08-25:
+
+| package | version | where | why |
+|---|---|---|---|
+| `react-day-picker` | 10.0.1 | prod | what the generated `calendar` is built on |
+| `sonner` | 2.0.8 | prod | what the registry generates for toasts; the deprecated `toast` is gone |
+| `next-themes` | 0.4.6 | prod | installed by the CLI, **not chosen** — see below |
+
+Three things about those are worth knowing, because none of them is what you would guess:
+
+- **`react-day-picker` brings `date-fns` with it**, as its own dependency. It is *not* a direct dependency of this
+  project and must never become one: pnpm's strict `node_modules` layout means it is not even resolvable from
+  `src/`, so the "no date library" rule is enforced by the package manager rather than by discipline. `shadcn add
+  calendar` adds `date-fns` to `package.json` from its registry metadata; that entry was removed, and should be
+  removed again if a future `add` re-introduces it. All date arithmetic stays in `src/lib/dates.js` and all
+  formatting in `src/lib/format-dates.js`
+- **The calendar is localised through `Intl`, not through a date-fns `locale` object**, which is how
+  react-day-picker expects it. `src/components/date-navigator.jsx` passes both `formatters` (what is drawn) and
+  `labels` (what is announced) built from `Intl.DateTimeFormat`. Both halves are required: with only `formatters`
+  the picker shows French on screen while reading its month and its days in English to a screen reader. It is also
+  given `weekStartsOn={1}` — Monday, hard-coded, never derived from the locale, the same rule `src/lib/dates.js`
+  follows
+- **`next-themes` is installed but never mounted.** The generated `src/components/ui/sonner.jsx` imports `useTheme`
+  from it; with no `ThemeProvider` above it that hook returns an empty stub, so the component's own
+  `theme = "system"` default always wins and sonner resolves the appearance from `prefers-color-scheme` itself,
+  which agrees with the `.dark` class `src/lib/theme.js` mirrors. Keeping the dependency was a deliberate decision on
+  2026-08-25: the alternative was hand-editing a generated component, and the never-hand-edit rule was judged worth
+  more than removing a package that costs nothing at runtime. `src/lib/theme.js` remains the only code allowed to own
+  the `.dark` class, and `next-themes`' own `ThemeProvider` — which contains a `dangerouslySetInnerHTML` — is never
+  rendered
+
 Three of those are worth knowing about, because they are not what you would guess:
 
 - `shadcn` is a **runtime dependency**, not just a CLI run through `pnpm dlx`. CLI 4.x makes `src/index.css` do
@@ -338,11 +387,34 @@ Three of those are worth knowing about, because they are not what you would gues
 - `components/` — our own components
 - `db/` — database queries and mutations
 - `i18n/` — `en.json`, `fr.json` and the i18next setup
-- `lib/` — pure helpers (dates, grouping, SQL import and export, the system-theme mirror, the `<html lang>`
-  mirror), where most of the tests
-  live. `lib/utils.js` is generated by shadcn and is the exception: it is not hand-edited
+- `lib/` — pure helpers (dates, `Intl` date formatting, grouping, SQL import and export, the system-theme mirror,
+  the `<html lang>` mirror), where most of the tests
+  live. `lib/utils.js` is generated by shadcn and is the exception: it is not hand-edited. `lib/dates.js` and
+  `lib/format-dates.js` split deliberately: the first does arithmetic and knows nothing about language, the second
+  does language and does no arithmetic
 - `hooks/` — declared by `components.json` as `@/hooks`; shadcn writes generated hooks there. It does not exist until
   a generated component needs it
 
 No state management library: React hooks plus a single context for the shared homework and course data. Do not add
 Redux, Zustand, TanStack Query or a router without asking.
+
+That context is `src/components/app-data.jsx` (`AppDataProvider` / `useAppData`), added in milestone 6. It owns the
+selected date, the current view, and the courses and homework for the visible range, and exposes `reload` for the
+mutations milestones 7 to 9 add. Three things about it are load-bearing:
+
+- **The language is deliberately not in it.** `useTranslation` already subscribes its consumers to i18next's
+  `languageChanged`, so a copy here would be a second source of truth that drifts from `i18n.language`
+- **`startupError` is deliberately not in it either.** It stays a prop threaded from `src/boot.jsx` into `App`,
+  because it is the only link carrying a startup database failure to the user and a context refactor is exactly how
+  it would get dropped. `src/boot.test.jsx` exists to catch that
+- **Archived courses are kept**, never filtered out: a homework entry keeps displaying the real name of a course the
+  user deleted. Narrowing to the active ones is the picker's job
+- Overlapping reads — stepping *next* several times — are settled by the effect's own cleanup, which React runs
+  before re-running the effect, so a read whose range is no longer visible can no longer write to state. A sequence
+  counter on top of that was tried and removed: the cleanup already fires on every dependency change and on unmount,
+  so the counter could never be the thing that rejected a response. It was dead code that read like a safeguard
+- **A failed read is counted, not just stored.** `src/db/client.js` caches a rejected `Database.load`, so every read
+  after a failed migration rejects with the *same* `Error` instance. `setError` bails out of the re-render on an
+  unchanged value, and a toast deduped on error identity would report the first failure and stay silent for the rest
+  of the session while the view claimed "nothing due". The context therefore exposes `errorCount` alongside `error`,
+  and `App` keys its toast on the count. Do not go back to keying it on the error object

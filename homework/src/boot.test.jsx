@@ -1,6 +1,16 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { screen, act } from "@testing-library/react";
-import { boot } from "@/boot";
+import { screen, act, waitFor } from "@testing-library/react";
+import { boot, reportLateStartupFailure } from "@/boot";
+
+// The data layer is faked: the Tauri SQL plugin only exists inside the Tauri
+// runtime, and `boot` now renders the real application, which reads on mount.
+const { listCourses, listHomeworkBetween } = vi.hoisted(() => ({
+  listCourses: vi.fn(async () => []),
+  listHomeworkBetween: vi.fn(async () => []),
+}));
+
+vi.mock("@/db/courses", () => ({ listCourses }));
+vi.mock("@/db/homework", () => ({ listHomeworkBetween }));
 
 // `boot` renders into a container of its own rather than through Testing
 // Library's render, so it cleans up after itself here.
@@ -30,9 +40,10 @@ describe("boot", () => {
     expect(screen.getByRole("heading", { name: "Devoirs2mat" })).not.toBeNull();
   });
 
-  // The link that actually carries a startup database failure to the user.
-  // Milestone 6 turns this into a toast; until then the point of the test is
-  // that a refactor cannot quietly drop the wiring.
+  // The link that actually carries a startup database failure to the user. It
+  // is a prop threaded from here into `App`, and the shared context deliberately
+  // does not carry it: this test is what stops a refactor from quietly dropping
+  // the only report the student would ever see.
   it("hands a startup error to the application", async () => {
     const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     const failure = new Error("the database did not open");
@@ -41,7 +52,11 @@ describe("boot", () => {
       boot(freshContainer(), failure);
     });
 
-    expect(logged).toHaveBeenCalled();
+    // Reported as a toast, which is what `specs/functional-specs.md` requires
+    // for a migration error at startup.
+    await waitFor(() => {
+      expect(screen.getByText(/could not be opened/i)).not.toBeNull();
+    });
     expect(logged.mock.calls.flat()).toContain(failure);
   });
 
@@ -52,6 +67,63 @@ describe("boot", () => {
       boot(freshContainer());
     });
 
+    expect(logged).not.toHaveBeenCalled();
+    expect(screen.queryByText(/could not be opened/i)).toBeNull();
+  });
+
+  // `boot` renders under `StrictMode`, which double-mounts effects in
+  // development. Without the dedupe the student would get two identical toasts
+  // for one failure.
+  it("reports a startup failure once, not once per StrictMode mount", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const failure = new Error("the database did not open");
+
+    await act(async () => {
+      boot(freshContainer(), failure);
+    });
+
+    await waitFor(() => {
+      expect(screen.getAllByText(/could not be opened/i)).toHaveLength(1);
+    });
+  });
+});
+
+// The other half of the startup failure path. When the deadline wins,
+// `resolveStartup` settles with NO error and the application renders in the
+// detected language; a real failure arriving after that reaches nobody unless
+// `onLate` reports it. `main.jsx` cannot be imported from a test, which is why
+// this lives in `boot.jsx`.
+describe("a startup failure that arrives late", () => {
+  it("still reaches the user, because a failure is never silent", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    await act(async () => {
+      boot(freshContainer());
+    });
+    // The application rendered clean: the deadline settled without an error.
+    expect(screen.queryByText(/could not be opened/i)).toBeNull();
+
+    await act(async () => {
+      reportLateStartupFailure(new Error("the migration failed, eventually"));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/could not be opened/i)).not.toBeNull();
+    });
+    expect(logged).toHaveBeenCalled();
+  });
+
+  it("says nothing when the late answer carried no error", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    await act(async () => {
+      boot(freshContainer());
+    });
+
+    await act(async () => {
+      reportLateStartupFailure(null);
+      reportLateStartupFailure(undefined);
+    });
+
+    expect(screen.queryByText(/could not be opened/i)).toBeNull();
     expect(logged).not.toHaveBeenCalled();
   });
 });

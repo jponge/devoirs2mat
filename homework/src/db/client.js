@@ -34,8 +34,8 @@ let pending = null;
 // The first caller is `src/i18n/preference.js`, which reads `settings.language`
 // before the first render — so that is where the connection opens, where the
 // migrations run, and where a failure is caught. It hands the error to `App`,
-// which holds it until milestone 6 turns it into the toast that
-// `specs/functional-specs.md` requires for a migration error.
+// which reports it as the toast `specs/functional-specs.md` requires for a
+// migration error.
 export function getDatabase() {
   if (pending === null) {
     pending = Database.load(DATABASE_URL);

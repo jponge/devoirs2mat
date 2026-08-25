@@ -64,6 +64,11 @@ an empty state explaining that a course is needed first, with a button that open
 - In the top we will have a component to select the current day:
     - in the daily view this selects the current day
     - in the weekly view this puts us in the week of the current day
+    - what it displays follows the view: the selected date in the daily view, and the Monday-to-Sunday range of the
+      selected week in the weekly view. Both are formatted with `Intl`, which collapses whatever the two ends of a
+      range share — the month and the year inside one month, the year alone across a month boundary, nothing at all
+      across a year — and does it differently per language. Do not assemble the range by hand from two formatted
+      dates and a dash: that gets at least one language wrong in every one of those cases
     - the date selection component will be surrounded by:
         - previous / next day buttons in daily view
         - previous / next week in weekly view
