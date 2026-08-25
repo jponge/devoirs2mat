@@ -72,6 +72,10 @@ changed, `cargo check` passes if you touched Rust, and you have stated plainly w
 - Do not touch `pnpm-lock.yaml` (change dependencies through `pnpm` only), `homework/src-tauri/icons/`, or anything
   under `.idea/`
 - Before asking me to review a *completed* task or plan step — not after each individual edit, and not for typo,
-  formatting or one-line changes — launch three `general-purpose` subagents in parallel with an architecture brief, a
-  quality-engineering brief and an adversarial brief. Report their findings to me, split into what you fixed and what
-  you deliberately did not. Never silently drop a finding, and never start a second review round on your own
+  formatting or one-line changes — launch review subagents in parallel: **three** (architecture, quality-engineering,
+  adversarial) when the change touches user-visible behaviour, persistence or a public contract; **one**
+  quality-engineering agent when it is internal helpers with no UI and no schema change. Brief them to
+  **mutation-test** — introduce a realistic bug, run the suite, restore — because a finding backed by a surviving
+  mutant is worth more than a page of prose. Ask for **must-fix findings only**, each with a reproduction and the
+  smallest fix; no "worth doing later" tail. Report their findings to me, split into what you fixed and what you
+  deliberately did not. Never silently drop a finding, and never start a second review round on your own
