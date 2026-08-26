@@ -41,7 +41,7 @@ describe("boot", () => {
       boot(freshContainer());
     });
 
-    expect(screen.getByRole("heading", { name: "Devoirs2mat" })).not.toBeNull();
+    expect(screen.getByRole("heading", { name: "Devoirs" })).not.toBeNull();
   });
 
   // The link that actually carries a startup database failure to the user. It

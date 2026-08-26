@@ -11,7 +11,7 @@
 // text may legitimately contain a semicolon inside its own quoted value.
 import { SCHEMA_VERSION } from "@/db/schema";
 
-const HEADER_RE = /^-- devoirs2mat schema-version: (\d+)\s*$/;
+const HEADER_RE = /^-- devoirs schema-version: (\d+)\s*$/;
 
 const COLUMNS = {
   courses: ["id", "name", "color", "archived_at", "created_at"],
@@ -49,7 +49,7 @@ function insertStatement(table, row) {
 // homework references them, readable top to bottom even though the import
 // step controls its own delete/insert order rather than trusting file order.
 export function generateExport(courses, homework, settings) {
-  const lines = [`-- devoirs2mat schema-version: ${SCHEMA_VERSION}`];
+  const lines = [`-- devoirs schema-version: ${SCHEMA_VERSION}`];
   for (const row of courses) {
     lines.push(insertStatement("courses", row));
   }

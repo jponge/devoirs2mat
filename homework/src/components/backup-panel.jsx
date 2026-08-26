@@ -41,7 +41,7 @@ export function BackupPanel({ onError = () => {} }) {
   const doExport = async () => {
     try {
       const path = await save({
-        defaultPath: `devoirs2mat-${todayDate()}.sql`,
+        defaultPath: `devoirs-${todayDate()}.sql`,
         filters: SQL_FILTER,
       });
       // A `null` path means the dialog was cancelled — a silent no-op, the

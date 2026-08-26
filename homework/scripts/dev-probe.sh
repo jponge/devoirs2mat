@@ -2,7 +2,7 @@
 # Launch the Tauri dev app, capture evidence, then shut it down on its own.
 # Never leaves a window for a human to close.
 SP="$(cd "$(dirname "$0")/.." && pwd)"
-LOG="${TMPDIR:-/tmp}/devoirs2mat-dev.log"
+LOG="${TMPDIR:-/tmp}/devoirs-dev.log"
 cleanup() {
   pkill -f 'target/debug/homework' 2>/dev/null
   # `tauri dev` spawns vite as beforeDevCommand; killing only the app leaves it
@@ -41,4 +41,4 @@ osascript -e 'tell application "System Events" to get title of every window of (
 echo "--- app process ---"
 pgrep -fl 'target/debug/homework'
 echo "--- screenshot ---"
-screencapture -x "${TMPDIR:-/tmp}/devoirs2mat.png" 2>&1 && echo "saved ${TMPDIR:-/tmp}/devoirs2mat.png" || echo "screencapture unavailable"
+screencapture -x "${TMPDIR:-/tmp}/devoirs.png" 2>&1 && echo "saved ${TMPDIR:-/tmp}/devoirs.png" || echo "screencapture unavailable"

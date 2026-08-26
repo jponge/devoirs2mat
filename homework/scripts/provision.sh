@@ -1,5 +1,5 @@
 #!/bin/bash
-# One-time (and safe-to-repeat) setup for building Devoirs2mat installers on
+# One-time (and safe-to-repeat) setup for building Devoirs installers on
 # all three platforms from this Mac. Run this before any of the build-*.sh
 # scripts. Idempotent: re-running it is always safe.
 SP="$(cd "$(dirname "$0")/.." && pwd)"

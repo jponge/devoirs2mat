@@ -111,7 +111,7 @@ describe("message catalogs", () => {
   // The application name is never translated, so it must not have crept into a
   // catalogue as a translatable string.
   it("do not translate the application name", () => {
-    expect(JSON.stringify(fr)).not.toMatch(/Devoirs2mat/);
-    expect(JSON.stringify(en)).not.toMatch(/Devoirs2mat/);
+    expect(JSON.stringify(fr)).not.toMatch(/Devoirs/);
+    expect(JSON.stringify(en)).not.toMatch(/Devoirs/);
   });
 });

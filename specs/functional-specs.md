@@ -128,7 +128,7 @@ It exposes further operations:
       second code path that really removes a row
 - exporting and importing data: we want to ensure backups and restores are possible, and to do that we want to export
   the database schema and content as SQL scripts for maximum portability
-    - the export starts with a `-- devoirs2mat schema-version: N` header line
+    - the export starts with a `-- devoirs schema-version: N` header line
     - importing is a **full restore, never a merge**: it replaces the entire database content, after an explicit
       confirmation that names what is about to be lost, and the whole script runs inside a single transaction so that
       any failure rolls everything back

@@ -41,7 +41,7 @@ beforeEach(async () => {
   listHomeworkBetween.mockResolvedValue([]);
   exportDatabase.mockResolvedValue(VALID_EXPORT);
   importDatabase.mockResolvedValue(undefined);
-  save.mockResolvedValue("/tmp/devoirs2mat-2026-08-26.sql");
+  save.mockResolvedValue("/tmp/devoirs-2026-08-26.sql");
   open.mockResolvedValue("/tmp/chosen.sql");
   writeTextFile.mockResolvedValue(undefined);
   readTextFile.mockResolvedValue(VALID_EXPORT);
@@ -74,9 +74,9 @@ describe("exporting", () => {
     // `today` prop — a hard-coded date string here would only coincidentally
     // match on the day this test happens to run.
     expect(save).toHaveBeenCalledWith(
-      expect.objectContaining({ defaultPath: `devoirs2mat-${todayDate()}.sql` }),
+      expect.objectContaining({ defaultPath: `devoirs-${todayDate()}.sql` }),
     );
-    expect(writeTextFile).toHaveBeenCalledWith("/tmp/devoirs2mat-2026-08-26.sql", VALID_EXPORT);
+    expect(writeTextFile).toHaveBeenCalledWith("/tmp/devoirs-2026-08-26.sql", VALID_EXPORT);
   });
 
   it("does nothing when the save dialog is cancelled", async () => {
@@ -125,7 +125,7 @@ describe("importing", () => {
 
   it("refuses a bad file without ever showing the confirmation dialog", async () => {
     const onError = vi.fn();
-    readTextFile.mockResolvedValue("not a devoirs2mat export");
+    readTextFile.mockResolvedValue("not a devoirs export");
     await mount({ onError });
 
     fireEvent.click(screen.getByRole("button", { name: en.backup.import }));
@@ -139,7 +139,7 @@ describe("importing", () => {
 
   it("refuses a mismatched schema version the same way", async () => {
     const onError = vi.fn();
-    readTextFile.mockResolvedValue(`-- devoirs2mat schema-version: ${SCHEMA_VERSION + 1}\n`);
+    readTextFile.mockResolvedValue(`-- devoirs schema-version: ${SCHEMA_VERSION + 1}\n`);
     await mount({ onError });
 
     fireEvent.click(screen.getByRole("button", { name: en.backup.import }));

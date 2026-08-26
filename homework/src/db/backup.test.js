@@ -150,13 +150,13 @@ describe("importDatabase", () => {
   });
 
   it("refuses a bad header before ever invoking the import command", async () => {
-    await expect(importDatabase("not a devoirs2mat export")).rejects.toThrow(SqlImportError);
+    await expect(importDatabase("not a devoirs export")).rejects.toThrow(SqlImportError);
 
     expect(invoke).not.toHaveBeenCalled();
   });
 
   it("refuses a mismatched schema version before ever invoking the import command", async () => {
-    const text = `-- devoirs2mat schema-version: ${SCHEMA_VERSION + 1}\n`;
+    const text = `-- devoirs schema-version: ${SCHEMA_VERSION + 1}\n`;
 
     const failure = await importDatabase(text).catch((error) => error);
 

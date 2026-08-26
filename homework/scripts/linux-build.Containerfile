@@ -1,4 +1,4 @@
-# Builds Devoirs2mat's Linux AppImage inside a real Linux userspace — unlike
+# Builds Devoirs' Linux AppImage inside a real Linux userspace — unlike
 # Windows, webkit2gtk/GTK can't be cross-compiled from macOS the clean way
 # cargo-xwin handles Windows, so this runs the actual build here instead.
 # Used by scripts/build-linux.sh (podman build -f this file). No source is

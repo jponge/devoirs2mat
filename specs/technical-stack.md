@@ -12,7 +12,7 @@
     - We target desktop applications (Windows, macOS and Linux)
     - We do not have plans for Android / iOS
     - Data persistence will be done using the [Tauri SQL plugin](https://v2.tauri.app/plugin/sql/) and SQLite
-- The application is named **Devoirs2mat** everywhere, and the name is never translated: `productName` in
+- The application is named **Devoirs** everywhere, and the name is never translated: `productName` in
   `tauri.conf.json`, the window title, the `<title>` in `index.html`, and the installers
 - The code is written in JavaScript
 - `pnpm` is the only allowed Node tool, do not use `npm`, `yarn`, `npx`, etc
@@ -501,7 +501,7 @@ to extract and run directly instead.
 bind-mounted at `/workspace` for the *source* (mise.toml lives at the repo root, and Mise's config discovery walks
 up parent directories to find it, the same reason a bare `pnpm`/`cargo` already works from `homework/` locally
 with no `mise.toml` of its own there) — but `CARGO_TARGET_DIR` points at a separate named volume
-(`devoirs2mat-linux-target`), native to the Linux VM's own filesystem. Found the hard way: the AppImage bundler
+(`devoirs-linux-target`), native to the Linux VM's own filesystem. Found the hard way: the AppImage bundler
 copies and re-permissions a few hundred shared libraries into place near the end of the build, and that specific
 pattern of file operations fails with "Permission denied" when the destination is the bind-mounted path — a
 virtiofs quirk (bind mounts on macOS are proxied through a network filesystem protocol into the Linux VM), not a

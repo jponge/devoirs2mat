@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Devoirs2mat",
+  "productName": "Devoirs",
   "version": "0.1.0",
   "identifier": "org.ponge.homework",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Devoirs2mat",
+        "title": "Devoirs",
         "width": 800,
         "height": 600
       }

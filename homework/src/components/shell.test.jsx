@@ -67,12 +67,12 @@ beforeEach(async () => {
     await i18n.changeLanguage(language);
   });
   startLanguage.mockResolvedValue({ language: "en", error: null });
-  exportDatabase.mockResolvedValue("-- devoirs2mat schema-version: 1\n");
+  exportDatabase.mockResolvedValue("-- devoirs schema-version: 1\n");
   importDatabase.mockResolvedValue(undefined);
-  save.mockResolvedValue("/tmp/devoirs2mat.sql");
+  save.mockResolvedValue("/tmp/devoirs.sql");
   open.mockResolvedValue("/tmp/chosen.sql");
   writeTextFile.mockResolvedValue(undefined);
-  readTextFile.mockResolvedValue("-- devoirs2mat schema-version: 1\n");
+  readTextFile.mockResolvedValue("-- devoirs schema-version: 1\n");
   await i18n.changeLanguage("en");
 });
 
@@ -877,7 +877,7 @@ describe("export and import", () => {
 
   it("toasts through the whole chain when the chosen file is refused", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
-    readTextFile.mockResolvedValue("not a devoirs2mat export");
+    readTextFile.mockResolvedValue("not a devoirs export");
     await mount();
     openPanel();
     await waitFor(() => expect(screen.getByText(en.backup.title)).not.toBeNull());

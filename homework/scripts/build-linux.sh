@@ -5,9 +5,9 @@
 # (scripts/provision.sh checks for it, but does not install it).
 SCRIPTS="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$SCRIPTS/../.." && pwd)"
-IMAGE="devoirs2mat-linux-build"
-VOLUME="devoirs2mat-linux-target"
-CONTAINER="devoirs2mat-linux-build-run"
+IMAGE="devoirs-linux-build"
+VOLUME="devoirs-linux-target"
+CONTAINER="devoirs-linux-build-run"
 OUT="$SCRIPTS/../src-tauri/target/podman-linux-appimage"
 
 if ! command -v podman >/dev/null 2>&1; then
@@ -82,7 +82,7 @@ BUILD_STATUS=$?
 mkdir -p "$OUT"
 podman cp "$CONTAINER:/build-target/release/bundle/appimage/." "$OUT/" 2>/dev/null
 podman rm -f "$CONTAINER" >/dev/null 2>&1
-# Only the final artifact is worth keeping — `Devoirs2mat.AppDir` alongside
+# Only the final artifact is worth keeping — `Devoirs.AppDir` alongside
 # it is linuxdeploy's staging directory, not something to hand anyone.
 rm -rf "$OUT"/*.AppDir
 

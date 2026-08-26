@@ -17,7 +17,7 @@ export function TopBar({ onLanguageError, onCourseError, onBackupError, panelOpe
           was clutter. The heading stays for screen readers, so the document
           still has an `h1` above the `h2` day headings, and is never
           translated in either language. */}
-      <h1 className="sr-only">Devoirs2mat</h1>
+      <h1 className="sr-only">Devoirs</h1>
 
       <div className="flex flex-wrap items-center gap-3">
         <DateNavigator />

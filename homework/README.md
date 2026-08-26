@@ -1,4 +1,4 @@
-# Devoirs2mat
+# Devoirs
 
 The Tauri 2 + React desktop application. It lives in this `homework/` directory.
 

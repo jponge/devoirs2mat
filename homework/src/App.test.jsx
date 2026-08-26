@@ -39,7 +39,7 @@ describe("App", () => {
     await settle();
 
     // Never translated, in either language.
-    expect(screen.getByRole("heading", { name: "Devoirs2mat" })).not.toBeNull();
+    expect(screen.getByRole("heading", { name: "Devoirs" })).not.toBeNull();
   });
 
   it("starts in the daily view", async () => {
@@ -87,7 +87,7 @@ describe("App with a startup failure", () => {
     await settle();
 
     // A database that cannot be opened must not leave a blank window.
-    expect(screen.getByRole("heading", { name: "Devoirs2mat" })).not.toBeNull();
+    expect(screen.getByRole("heading", { name: "Devoirs" })).not.toBeNull();
     await waitFor(() => {
       expect(screen.getByText(en.errors.startupFailed)).not.toBeNull();
     });

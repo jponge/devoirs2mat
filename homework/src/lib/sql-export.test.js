@@ -88,7 +88,7 @@ describe("the export header", () => {
   it("opens with the exact required format", () => {
     const text = generateExport([], [], []);
 
-    expect(text.startsWith(`-- devoirs2mat schema-version: ${SCHEMA_VERSION}\n`)).toBe(true);
+    expect(text.startsWith(`-- devoirs schema-version: ${SCHEMA_VERSION}\n`)).toBe(true);
   });
 
   it("contains no other tables, in particular never _sqlx_migrations", () => {
@@ -117,17 +117,31 @@ describe("parseExport rejecting bad input", () => {
     }
   });
 
+  // The header text changed with the application's rename from Devoirs2mat to
+  // Devoirs, an explicit, accepted break: a backup exported before that change
+  // is no longer importable. Pinned here so that consequence stays a decision,
+  // not a silent regression.
+  it("rejects a pre-rename export, whose header still says devoirs2mat", () => {
+    const text = `-- devoirs2mat schema-version: ${SCHEMA_VERSION}\n`;
+    expect(() => parseExport(text)).toThrow(SqlImportError);
+    try {
+      parseExport(text);
+    } catch (error) {
+      expect(error.reason).toBe("badHeader");
+    }
+  });
+
   // A mismatched schema version is refused outright rather than partially
   // applied — the caller checks `schemaVersion`, but parsing itself must still
   // succeed so the caller can compare it against the current constant.
   it("still parses a well-formed body with a different schema version, reporting the version", () => {
-    const text = `-- devoirs2mat schema-version: 999\n`;
+    const text = `-- devoirs schema-version: 999\n`;
 
     expect(parseExport(text).schemaVersion).toBe(999);
   });
 
   it("rejects malformed statements without partially parsing", () => {
-    const text = `-- devoirs2mat schema-version: ${SCHEMA_VERSION}\nINSERT INTO courses (id, name) VALUES (1);\n`;
+    const text = `-- devoirs schema-version: ${SCHEMA_VERSION}\nINSERT INTO courses (id, name) VALUES (1);\n`;
 
     expect(() => parseExport(text)).toThrow(SqlImportError);
     try {
@@ -141,7 +155,7 @@ describe("parseExport rejecting bad input", () => {
   // truncated file) must be refused, not silently turned into the number `0`
   // in what is meant to be a `TEXT NOT NULL` column.
   it("rejects a blank value token rather than parsing it as 0", () => {
-    const text = `-- devoirs2mat schema-version: ${SCHEMA_VERSION}\nINSERT INTO settings (key, value) VALUES ('language',);\n`;
+    const text = `-- devoirs schema-version: ${SCHEMA_VERSION}\nINSERT INTO settings (key, value) VALUES ('language',);\n`;
 
     expect(() => parseExport(text)).toThrow(SqlImportError);
     try {
@@ -152,13 +166,13 @@ describe("parseExport rejecting bad input", () => {
   });
 
   it("rejects an unknown table", () => {
-    const text = `-- devoirs2mat schema-version: ${SCHEMA_VERSION}\nINSERT INTO _sqlx_migrations (id) VALUES (1);\n`;
+    const text = `-- devoirs schema-version: ${SCHEMA_VERSION}\nINSERT INTO _sqlx_migrations (id) VALUES (1);\n`;
 
     expect(() => parseExport(text)).toThrow(SqlImportError);
   });
 
   it("rejects a statement missing its trailing semicolon", () => {
-    const text = `-- devoirs2mat schema-version: ${SCHEMA_VERSION}\nINSERT INTO settings (key, value) VALUES ('language', 'fr')`;
+    const text = `-- devoirs schema-version: ${SCHEMA_VERSION}\nINSERT INTO settings (key, value) VALUES ('language', 'fr')`;
 
     expect(() => parseExport(text)).toThrow(SqlImportError);
   });
@@ -167,7 +181,7 @@ describe("parseExport rejecting bad input", () => {
   // appears inside a homework entry's own text.
   it("does not treat a semicolon inside a quoted value as a statement boundary", () => {
     const text =
-      `-- devoirs2mat schema-version: ${SCHEMA_VERSION}\n` +
+      `-- devoirs schema-version: ${SCHEMA_VERSION}\n` +
       `INSERT INTO homework (id, text, due_date, course_id, done, created_at) VALUES (1, 'a; b', '2026-08-25', 1, 0, '2026-08-20T08:00:00Z');\n`;
 
     const parsed = parseExport(text);
@@ -190,7 +204,7 @@ describe("validateExport", () => {
   });
 
   it("refuses a mismatched schema version, distinctly from a bad header", () => {
-    const text = `-- devoirs2mat schema-version: ${SCHEMA_VERSION + 1}\n`;
+    const text = `-- devoirs schema-version: ${SCHEMA_VERSION + 1}\n`;
 
     expect(() => validateExport(text)).toThrow(SqlImportError);
     try {
