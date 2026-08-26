@@ -118,12 +118,63 @@ describe("the homework card", () => {
     expect(li.querySelector("del")?.textContent).toBe("struck");
   });
 
-  it("unwraps an unsupported construct to plain text, with no heading or list element", async () => {
+  it("unwraps a heading to plain text, with no heading element", async () => {
     await mount(<CourseGroup group={group(COURSE, [item({ text: "# Devoir de maths" })])} />);
 
     const li = screen.getByTestId("homework-item");
-    expect(li.querySelector("h1, h2, h3, ul, ol, li")).toBeNull();
+    expect(li.querySelector("h1, h2, h3")).toBeNull();
     expect(li.textContent).toContain("Devoir de maths");
+  });
+
+  it("renders a bulleted list as a real list, with visible markers", async () => {
+    await mount(
+      <CourseGroup
+        group={group(COURSE, [item({ text: "Faire exercices :\n\n- 3 page 123\n- 1, 2 et 4 page 125" })])}
+      />,
+    );
+
+    const li = screen.getByTestId("homework-item");
+    const list = li.querySelector("ul");
+    expect(list).not.toBeNull();
+    expect(list.className).toContain("list-disc");
+    const items = list.querySelectorAll("li");
+    expect(items).toHaveLength(2);
+    expect(items[0].textContent).toBe("3 page 123");
+    expect(items[1].textContent).toBe("1, 2 et 4 page 125");
+  });
+
+  it("renders a numbered list as a real list, with visible markers", async () => {
+    await mount(
+      <CourseGroup group={group(COURSE, [item({ text: "1. Lire le chapitre\n2. Faire le résumé" })])} />,
+    );
+
+    const li = screen.getByTestId("homework-item");
+    const list = li.querySelector("ol");
+    expect(list).not.toBeNull();
+    expect(list.className).toContain("list-decimal");
+    const items = list.querySelectorAll("li");
+    expect(items).toHaveLength(2);
+    expect(items[0].textContent).toBe("Lire le chapitre");
+    expect(items[1].textContent).toBe("Faire le résumé");
+  });
+
+  it("renders a nested list without special-casing it away", async () => {
+    await mount(
+      <CourseGroup
+        group={group(COURSE, [
+          item({ text: "- Maths\n  - Exercice 3\n  - Exercice 4\n- Français" }),
+        ])}
+      />,
+    );
+
+    const li = screen.getByTestId("homework-item");
+    const text = li.querySelector('[data-testid="homework-text"]');
+    const outerList = text.querySelector("ul");
+    const outerItems = Array.from(outerList.children).filter((child) => child.tagName === "LI");
+    expect(outerItems).toHaveLength(2);
+    const nestedList = outerList.querySelector("ul");
+    expect(nestedList).not.toBeNull();
+    expect(nestedList.querySelectorAll("li")).toHaveLength(2);
   });
 
   it("renders a link with an allowed scheme as a real link", async () => {
@@ -419,6 +470,24 @@ describe("editing a homework entry", () => {
     listCourses.mockResolvedValue([COURSE, { ...HISTOIRE, archived_at: "2026-08-26T00:00:00Z" }]);
     fireEvent.click(screen.getByRole("checkbox"));
     await waitFor(() => expect(setHomeworkDone).toHaveBeenCalled());
+
+    // `setHomeworkDone` resolving only proves the write landed — `reload()`
+    // itself just bumps a counter synchronously, and the refetch it schedules
+    // settles on a later tick. Proceeding to Save immediately races that
+    // refetch: under load it can lose, and this test would then validate
+    // against the still-stale, still-active course list instead of the one
+    // the archive actually left behind. Reopening the combobox and waiting
+    // for the list to actually reflect the change is what proves the refetch
+    // has landed, not just started.
+    fireEvent.click(screen.getByRole("combobox"));
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: "Maths" })).not.toBeNull();
+      expect(screen.queryByRole("option", { name: "Histoire" })).toBeNull();
+    });
+    // Dismissed with a pointer, not Escape: this form treats Escape as
+    // Cancel, and nothing here should risk closing the edit itself.
+    fireEvent.pointerDown(document.body);
+    fireEvent.click(document.body);
 
     fireEvent.click(screen.getByRole("button", { name: en.homework.save }));
 

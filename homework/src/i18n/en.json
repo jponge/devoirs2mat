@@ -55,6 +55,18 @@
     "noneBody": "Every piece of homework goes in a course. Add one to get started.",
     "noneAction": "Add a course"
   },
+  "backup": {
+    "title": "Your data",
+    "export": "Export",
+    "import": "Import",
+    "exportFailed": "Couldn’t save your export.",
+    "importRefused": "Couldn’t read that file. Choose an export from this app instead.",
+    "importFailed": "Couldn’t restore your data. Nothing was changed.",
+    "confirmTitle": "Replace everything?",
+    "confirmBody": "This replaces your courses and your homework with what’s in the file. You can’t undo this.",
+    "confirmAction": "Import",
+    "confirmCancel": "Cancel"
+  },
   "language": {
     "en": "English",
     "fr": "Français"

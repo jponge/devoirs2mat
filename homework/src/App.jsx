@@ -133,11 +133,23 @@ function App({ startupError = null }) {
     [t],
   );
 
+  // `kind` is always the exact suffix of its own `backup.*` catalog key
+  // (`"exportFailed"`, `"importRefused"`, `"importFailed"`), set that way by
+  // `BackupPanel` precisely so no lookup table has to live here.
+  const reportBackupFailure = useCallback(
+    (failure, kind) => {
+      toast.error(t(`backup.${kind}`));
+      console.error("a write failed", failure);
+    },
+    [t],
+  );
+
   return (
     <AppDataProvider>
       <div className="flex min-h-svh flex-col">
         <TopBar
           onError={reportWriteFailure}
+          onBackupError={reportBackupFailure}
           panelOpen={panelOpen}
           onPanelOpenChange={setPanelOpen}
         />

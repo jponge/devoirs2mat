@@ -6,12 +6,14 @@
 // Escape and outside-click dismissal come from the Radix dialog underneath and
 // are deliberately not re-implemented here.
 //
-// It carries the language switch and, below the separator, the course editor.
+// It carries the language switch, the course editor, and the export/import
+// section, each separated by a divider.
 import { useTranslation } from "react-i18next";
 import { MenuIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { CourseEditor } from "@/components/course-editor";
+import { BackupPanel } from "@/components/backup-panel";
 import {
   Sheet,
   SheetContent,
@@ -30,7 +32,7 @@ import { setLanguage } from "@/i18n/preference";
 // `onError` rather than a toast raised here: a write that failed is reported by
 // whoever owns the toaster, and keeping this component free of that decision is
 // what lets it be tested without one.
-export function SidePanel({ onError = () => {}, open, onOpenChange }) {
+export function SidePanel({ onError = () => {}, onBackupError = () => {}, open, onOpenChange }) {
   const { t, i18n } = useTranslation();
 
   const choose = async (language) => {
@@ -96,6 +98,10 @@ export function SidePanel({ onError = () => {}, open, onOpenChange }) {
         <Separator className="my-2" />
 
         <CourseEditor onError={onError} />
+
+        <Separator className="my-2" />
+
+        <BackupPanel onError={onBackupError} />
       </SheetContent>
     </Sheet>
   );

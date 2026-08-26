@@ -55,6 +55,18 @@
     "noneBody": "Chaque devoir va dans une matière. Ajoutes-en une pour commencer.",
     "noneAction": "Ajouter une matière"
   },
+  "backup": {
+    "title": "Tes données",
+    "export": "Exporter",
+    "import": "Importer",
+    "exportFailed": "Impossible d’enregistrer ton export.",
+    "importRefused": "Ce fichier ne ressemble pas à un export de cette application. Choisis-en un autre.",
+    "importFailed": "Impossible de restaurer tes données. Rien n’a changé.",
+    "confirmTitle": "Tout remplacer ?",
+    "confirmBody": "Ceci remplace tes matières et tes devoirs par ce qu’il y a dans le fichier. Tu ne pourras pas revenir en arrière.",
+    "confirmAction": "Importer",
+    "confirmCancel": "Annuler"
+  },
   "language": {
     "en": "English",
     "fr": "Français"

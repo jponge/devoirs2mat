@@ -7,7 +7,7 @@ import { DateNavigator } from "@/components/date-navigator";
 import { SidePanel } from "@/components/side-panel";
 import { useAppData, VIEWS } from "@/components/app-data";
 
-export function TopBar({ onError, panelOpen, onPanelOpenChange }) {
+export function TopBar({ onError, onBackupError, panelOpen, onPanelOpenChange }) {
   const { t } = useTranslation();
   const { view, setView } = useAppData();
 
@@ -38,7 +38,12 @@ export function TopBar({ onError, panelOpen, onPanelOpenChange }) {
           ))}
         </ToggleGroup>
 
-        <SidePanel onError={onError} open={panelOpen} onOpenChange={onPanelOpenChange} />
+        <SidePanel
+          onError={onError}
+          onBackupError={onBackupError}
+          open={panelOpen}
+          onOpenChange={onPanelOpenChange}
+        />
       </div>
     </header>
   );

@@ -45,16 +45,18 @@ import { fromLocalDate, toLocalDate } from "@/lib/dates";
 import { formatFullDate } from "@/lib/format-dates";
 import { intlFormatters, intlLabels } from "@/lib/calendar-intl";
 
-// Only the inline subset `specs/functional-specs.md` describes. `del` is what
-// `remark-gfm`'s strikethrough (`~~text~~`) maps to — strikethrough is GFM, not
-// core CommonMark, which is why that plugin is needed at all.
+// The inline subset plus bulleted and numbered lists, per
+// `specs/functional-specs.md`. `del` is what `remark-gfm`'s strikethrough
+// (`~~text~~`) maps to — strikethrough is GFM, not core CommonMark, which is
+// why that plugin is needed at all. Lists (`ul`/`ol`/`li`) are core CommonMark,
+// not a GFM extension, so no further plugin is needed for them.
 //
-// `unwrapDisallowed` is deliberate: a heading, list, blockquote, table or image
-// is not given special rendering, but it is not dropped either — its own inline
+// `unwrapDisallowed` is deliberate: a heading, blockquote, table or image is
+// not given special rendering, but it is not dropped either — its own inline
 // children stay, so `# Devoir` shows as `Devoir`. There is no bespoke fallback
 // that reproduces the markup characters themselves; this is `react-markdown`'s
 // own restriction, doing exactly what it does out of the box.
-const ALLOWED_ELEMENTS = ["p", "strong", "em", "code", "del", "a"];
+const ALLOWED_ELEMENTS = ["p", "strong", "em", "code", "del", "a", "ul", "ol", "li"];
 
 // Reads `href` from the props react-markdown hands this component — already run
 // through the library's own default URL transform — and never from
@@ -310,7 +312,14 @@ function HomeworkCard({ item, courses, locale, onToggle, onSave, onDelete, onErr
             allowedElements={ALLOWED_ELEMENTS}
             unwrapDisallowed
             remarkPlugins={[remarkGfm]}
-            components={{ a: (props) => <MarkdownLink {...props} onError={onError} /> }}
+            components={{
+              a: (props) => <MarkdownLink {...props} onError={onError} />,
+              // Tailwind's preflight resets `list-style` to `none` on every
+              // `ul`/`ol`, so allowing the elements alone renders invisible
+              // bullets/numbers — the markers have to be reinstated here.
+              ul: (props) => <ul className="list-disc pl-5" {...props} />,
+              ol: (props) => <ol className="list-decimal pl-5" {...props} />,
+            }}
           >
             {item.text}
           </ReactMarkdown>

@@ -25,14 +25,6 @@
   download of CSS, JavaScript, fonts or icons. Fonts and assets are bundled, or we use the system font stack.
   Build-time network access (`pnpm install`, `pnpm dlx`) is fine
 
-## What is not bootstrapped yet
-
-The `create-tauri-app` starter has been stripped, and Tailwind CSS, shadcn, the SQL plugin and internationalization
-are in place. The following is still not installed, so do not assume it is there and do not treat setting it up as
-over-engineering — set it up as its own dedicated change rather than as a side effect of a feature:
-
-- the dialog and fs plugins used by export and import
-
 ## Persistence
 
 **This is a single-user, single-instance application.** One student, one window, one process, one local SQLite file.
@@ -58,18 +50,29 @@ thing.
 - Schema migrations are owned by the Rust side: declare them as `tauri_plugin_sql::Migration` in
   `src-tauri/src/migrations.rs`. This is the one deliberate exception to "the code is written in JavaScript"
 - Migrations are append-only: never edit a migration that has already shipped
-- Queries and mutations go through the JavaScript plugin API. Add a Rust `#[tauri::command]` only when the SQL plugin
-  genuinely cannot do the job
-- **The import runs in a transaction, and it is built in JavaScript.** The plugin acquires a connection from an sqlx
-  pool *per invoke*, so `execute("BEGIN")`, `execute(…)`, `execute("COMMIT")` as three separate calls are not
-  guaranteed to land on the same connection and are not atomic. The import is therefore **one `execute()` call
-  carrying the whole `BEGIN IMMEDIATE … COMMIT;` script**: sqlx steps a multi-statement string on a single acquired
-  connection, so that is a real transaction. Do not add a Rust command for it — the SQL plugin can do this job
-- One edge to check when milestone 10 builds it: a statement failing mid-script does **not** auto-rollback in SQLite,
-  and sqlx does not roll back when the connection returns to its pool, so that connection can be left holding an open
-  write transaction. Nobody else is competing for the database, so the only victim is our own next query — but a
-  half-applied import is exactly what the transaction exists to prevent. Check it empirically rather than assuming
-  the failure path cleans itself up
+- Queries and mutations go through the JavaScript plugin API for everything except the import transaction below —
+  that one genuinely needs a Rust `#[tauri::command]`, found out the hard way in milestone 10
+- **The import runs in a transaction, and it is a Rust command (`import_homework_database` in
+  `src-tauri/src/backup.rs`), not JavaScript.** The original plan was to build the whole
+  `BEGIN IMMEDIATE … COMMIT;` script as one string and hand it to the JS plugin's `execute()` in a single call, on
+  the theory that sqlx steps a multi-statement string on one acquired connection, so that would be a real
+  transaction. **This does not work, and it was verified broken against the real app, not caught by any test**:
+  `tauri-plugin-sql`'s `execute` command runs `sqlx::query(&_query)` — a bare query, not a `sqlx::Transaction`. When
+  a statement partway through the script fails (tested with two active courses sharing a name, which the
+  `courses_active_name` unique index rejects), the `BEGIN` has already run as an ordinary SQL statement sqlx has no
+  record of, and the connection goes back to the pool still holding SQLite's write lock. Every write after that
+  failed with no way to recover short of restarting the application — reads kept working, because SQLite's WAL mode
+  lets reads through regardless of a stuck writer, which made the symptom confusing (the app looked half-broken,
+  not fully broken). The fix is `import_homework_database`: it looks up the already-loaded pool through
+  `tauri_plugin_sql::DbInstances` (the plugin's app state, which is `pub` for exactly this), opens a real
+  `sqlx::Transaction` with `pool.begin()`, steps the DELETE/INSERT script on it, and calls `commit()`. If anything
+  fails before `commit()`, the `Transaction`'s `Drop` implementation rolls back automatically — that guarantee is
+  only available from Rust, which is why the command exists despite the general rule above. `sqlx` is therefore a
+  direct dependency of `src-tauri` too, pinned to `"0.8"` to match the version `tauri-plugin-sql` itself uses —
+  Cargo will not unify two different major versions of the same crate into one type, so a mismatched version would
+  fail to compile where the two touch (returning a `Pool<Sqlite>` from one and expecting it in the other)
+- The export side needed no such fix: it reads all three tables in one `db.select()` call, and a single SQL
+  statement is already an atomic, consistent snapshot for its own duration — there is no transaction to manage
 - The `sqlite` cargo feature must be enabled on `tauri-plugin-sql`, otherwise the crate compiles and every query fails
   at runtime
 - `src-tauri/capabilities/default.json` needs **both** `"sql:default"` and `"sql:allow-execute"`. `sql:default` grants
@@ -78,7 +81,10 @@ thing.
   so nothing looks wrong; every `INSERT`, `UPDATE` and `DELETE` fails with
   `sql.execute not allowed. Permissions associated with this command: sql:allow-execute`. Verified in milestone 3 by
   removing the entry and watching the writes disappear
-- Versions resolved on 2026-08-24: `tauri-plugin-sql` 2.4.0 (with sqlx 0.8.6), `@tauri-apps/plugin-sql` 2.4.0
+- Versions resolved on 2026-08-24: `tauri-plugin-sql` 2.4.0 (with sqlx 0.8.6), `@tauri-apps/plugin-sql` 2.4.0. Milestone
+  10 added `sqlx` 0.8 (`default-features = false`, `features = ["sqlite", "runtime-tokio"]`) as a direct
+  `src-tauri` dependency for `import_homework_database` — pinned to `"0.8"`, not a bare `"*"` or letting `cargo add`
+  pick the newest, specifically to land on the same version `tauri-plugin-sql` already resolves
 
 ## Testing
 
@@ -229,16 +235,20 @@ thing.
   native scrollbars and form controls follow. Do not add an in-application switch on top of this
 - Failures are reported with the preset's toast component. The functional specifications say when a toast is used
   rather than an inline message
-- Homework text is Markdown, rendered with `react-markdown` and restricted to the inline subset defined in the
-  functional specifications (`p`, `strong`, `em`, `code`, `del`, `a`), using `allowedElements` with
+- Homework text is Markdown, rendered with `react-markdown` and restricted to the subset defined in the functional
+  specifications (`p`, `strong`, `em`, `code`, `del`, `a`, `ul`, `ol`, `li`), using `allowedElements` with
   `unwrapDisallowed`. `del` is what `remark-gfm`'s strikethrough (`~~text~~`) maps to — strikethrough is GFM syntax,
-  not core CommonMark, which is the whole reason `remark-gfm` is a dependency. `remark-gfm` also enables tables,
-  autolinks and task lists, none of which is wanted, but `allowedElements` filters those out before they reach the
-  DOM. Raw HTML is never enabled: no `rehype-raw`, and no `dangerouslySetInnerHTML` anywhere in the code base.
-  Rendering to React elements rather than to an HTML string is what makes user text unable to become live markup
-  inside the webview, and it is why no separate sanitizer is needed. A heading, list, blockquote, table or image is
+  not core CommonMark, which is the whole reason `remark-gfm` is a dependency. Lists are core CommonMark, not a GFM
+  extension, so they needed no plugin, only adding `ul`/`ol`/`li` to `allowedElements` — nesting is not special-cased
+  away, since `allowedElements` already permits it structurally with no extra code. `remark-gfm` also enables
+  tables, autolinks and task lists, none of which is wanted, but `allowedElements` filters those out before they
+  reach the DOM. Raw HTML is never enabled: no `rehype-raw`, and no `dangerouslySetInnerHTML` anywhere in the code
+  base. Rendering to React elements rather than to an HTML string is what makes user text unable to become live
+  markup inside the webview, and it is why no separate sanitizer is needed. A heading, blockquote, table or image is
   not given special rendering, but `unwrapDisallowed` keeps its inline children rather than dropping them outright —
-  `# Devoir` renders as `Devoir`, not as a heading and not reproduced with its `#`
+  `# Devoir` renders as `Devoir`, not as a heading and not reproduced with its `#`. Tailwind's preflight resets
+  `list-style` to `none` on every `ul`/`ol`, so `src/components/course-group.jsx` overrides both with `components`
+  (`list-disc`/`list-decimal` plus left padding) — allowing the elements alone would render invisible markers
 - Links inside homework text are opened in the system browser with `@tauri-apps/plugin-opener`, which is already a
   dependency. They must never navigate the application webview, which would unmount the application. Opening a link
   is a user action and does not contradict the offline rule: the application itself still never needs the network.
@@ -400,12 +410,19 @@ Three of those are worth knowing about, because they are not what you would gues
 
 ## File access
 
-- Export and import use `@tauri-apps/plugin-dialog` to choose the path and `@tauri-apps/plugin-fs` to read and write
-  the file, entirely from JavaScript. No Rust command is involved
+Added by milestone 10, at the versions resolved on 2026-08-26: `tauri-plugin-dialog` 2.7.2, `tauri-plugin-fs` 2.5.1,
+`@tauri-apps/plugin-dialog` 2.7.2, `@tauri-apps/plugin-fs` 2.5.1.
+
+- Export and import use `@tauri-apps/plugin-dialog`'s `save()`/`open()` to choose the path and
+  `@tauri-apps/plugin-fs`'s `writeTextFile()`/`readTextFile()` to read and write it, entirely from JavaScript. No
+  Rust command is involved
 - Both plugins need their cargo dependency, their JS package, **and** their entries in
-  `src-tauri/capabilities/default.json` (`dialog:default`, plus the fs read and write permissions). The fs scope has
-  to allow the path the user picked in the dialog: that is the part that is easy to get wrong, and it fails at
-  runtime rather than at build time
+  `src-tauri/capabilities/default.json`: `dialog:default`, plus `fs:read-files` and `fs:write-files`. No static fs
+  `scope` entry is configured, and none is needed — the dialog plugin's `save()`/`open()` dynamically add whatever
+  path the user picked to the fs and asset-protocol scopes for the session (documented on the plugin's own `open`/
+  `save` functions), which is exactly what `fs:read-files`/`fs:write-files` describe themselves as needing: "without
+  any pre-configured accessible paths." A static scope naming a fixed directory would be the wrong tool here — the
+  student can save or open the file anywhere
 
 ## Code layout under `homework/src`
 

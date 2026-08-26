@@ -21,7 +21,19 @@ const {
   updateHomework: vi.fn(),
   deleteHomework: vi.fn(),
 }));
-const { setLanguage } = vi.hoisted(() => ({ setLanguage: vi.fn() }));
+const { setLanguage, startLanguage } = vi.hoisted(() => ({
+  setLanguage: vi.fn(),
+  startLanguage: vi.fn(),
+}));
+const { exportDatabase, importDatabase } = vi.hoisted(() => ({
+  exportDatabase: vi.fn(),
+  importDatabase: vi.fn(),
+}));
+const { save, open } = vi.hoisted(() => ({ save: vi.fn(), open: vi.fn() }));
+const { writeTextFile, readTextFile } = vi.hoisted(() => ({
+  writeTextFile: vi.fn(),
+  readTextFile: vi.fn(),
+}));
 
 vi.mock("@/db/courses", () => ({ listCourses }));
 vi.mock("@/db/homework", () => ({
@@ -31,9 +43,13 @@ vi.mock("@/db/homework", () => ({
   updateHomework,
   deleteHomework,
 }));
+vi.mock("@/db/backup", () => ({ exportDatabase, importDatabase }));
+vi.mock("@tauri-apps/plugin-dialog", () => ({ save, open }));
+vi.mock("@tauri-apps/plugin-fs", () => ({ writeTextFile, readTextFile }));
 // `setLanguage` is the real bridge to the database; the panel is tested against
-// the call, not against a write it cannot perform here.
-vi.mock("@/i18n/preference", () => ({ setLanguage }));
+// the call, not against a write it cannot perform here. `startLanguage` is
+// what a successful import re-invokes.
+vi.mock("@/i18n/preference", () => ({ setLanguage, startLanguage }));
 
 beforeEach(async () => {
   // At least one course, deliberately: with none, the main view shows the
@@ -47,6 +63,13 @@ beforeEach(async () => {
   setLanguage.mockImplementation(async (language) => {
     await i18n.changeLanguage(language);
   });
+  startLanguage.mockResolvedValue({ language: "en", error: null });
+  exportDatabase.mockResolvedValue("-- devoirs2mat schema-version: 1\n");
+  importDatabase.mockResolvedValue(undefined);
+  save.mockResolvedValue("/tmp/devoirs2mat.sql");
+  open.mockResolvedValue("/tmp/chosen.sql");
+  writeTextFile.mockResolvedValue(undefined);
+  readTextFile.mockResolvedValue("-- devoirs2mat schema-version: 1\n");
   await i18n.changeLanguage("en");
 });
 
@@ -796,5 +819,76 @@ describe("editing and deleting a homework entry", () => {
     fireEvent.click(screen.getByRole("button", { name: en.homework.deleteConfirm }));
 
     await waitFor(() => expect(screen.getByText(en.errors.saveFailed)).not.toBeNull());
+  });
+});
+
+describe("export and import", () => {
+  const openPanel = () =>
+    fireEvent.click(screen.getByRole("button", { name: en.topBar.openSidePanel }));
+
+  it("is reachable from the side panel", async () => {
+    await mount();
+    openPanel();
+
+    await waitFor(() => expect(screen.getByText(en.backup.title)).not.toBeNull());
+    expect(screen.getByRole("button", { name: en.backup.export })).not.toBeNull();
+    expect(screen.getByRole("button", { name: en.backup.import })).not.toBeNull();
+  });
+
+  // Catches a dropped `onBackupError` anywhere in App → TopBar → SidePanel →
+  // BackupPanel, the same reasoning `boot.test.jsx` applies to `startupError`
+  // and milestone 9's weekly-view test applies to homework writes.
+  it("toasts through the whole chain when the export write fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    writeTextFile.mockRejectedValue(new Error("disk full"));
+    await mount();
+    openPanel();
+    await waitFor(() => expect(screen.getByText(en.backup.title)).not.toBeNull());
+
+    fireEvent.click(screen.getByRole("button", { name: en.backup.export }));
+
+    await waitFor(() => expect(screen.getByText(en.backup.exportFailed)).not.toBeNull());
+  });
+
+  it("toasts through the whole chain when the chosen file is refused", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    readTextFile.mockResolvedValue("not a devoirs2mat export");
+    await mount();
+    openPanel();
+    await waitFor(() => expect(screen.getByText(en.backup.title)).not.toBeNull());
+
+    fireEvent.click(screen.getByRole("button", { name: en.backup.import }));
+
+    await waitFor(() => expect(screen.getByText(en.backup.importRefused)).not.toBeNull());
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+  });
+
+  it("restores, re-resolves the language and reloads once confirmed", async () => {
+    await mount();
+    openPanel();
+    await waitFor(() => expect(screen.getByText(en.backup.title)).not.toBeNull());
+    const before = listHomeworkBetween.mock.calls.length;
+
+    fireEvent.click(screen.getByRole("button", { name: en.backup.import }));
+    await waitFor(() => expect(screen.getByRole("alertdialog")).not.toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: en.backup.confirmAction }));
+
+    await waitFor(() => expect(importDatabase).toHaveBeenCalled());
+    await waitFor(() => expect(startLanguage).toHaveBeenCalled());
+    await waitFor(() => expect(listHomeworkBetween.mock.calls.length).toBeGreaterThan(before));
+  });
+
+  it("toasts through the whole chain when the restore transaction fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    importDatabase.mockRejectedValue(new Error("database is locked"));
+    await mount();
+    openPanel();
+    await waitFor(() => expect(screen.getByText(en.backup.title)).not.toBeNull());
+
+    fireEvent.click(screen.getByRole("button", { name: en.backup.import }));
+    await waitFor(() => expect(screen.getByRole("alertdialog")).not.toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: en.backup.confirmAction }));
+
+    await waitFor(() => expect(screen.getByText(en.backup.importFailed)).not.toBeNull());
   });
 });
