@@ -11,6 +11,27 @@ load of handwriting and spatial coordination.
 - Linux
 - macOS
 
+## Building
+
+The application lives in [`homework/`](homework/); every command below runs from there. Tooling comes from
+[Mise](https://mise.jdx.dev/) (`mise install`).
+
+```
+cd homework
+./scripts/provision.sh      # one-time toolchain setup, safe to re-run
+./scripts/build-macos.sh    # -> a .dmg
+./scripts/build-windows.sh  # -> an NSIS .exe, cross-compiled via cargo-xwin
+./scripts/build-linux.sh    # -> an AppImage, built inside a Podman container
+```
+
+Each build script prints the path to the installer it produced when it's done. Windows and Linux builds are
+cross-built from macOS — see the "Distribution" section of [`specs/technical-stack.md`](specs/technical-stack.md)
+for how, and for what each one actually needs installed (`scripts/provision.sh` handles most of it, but Windows
+also needs Homebrew's `llvm` and `makensis`, and Linux needs [Podman](https://podman.io/)).
+
+To run the application itself during development rather than build an installer, see
+[`homework/README.md`](homework/README.md).
+
 ## License
 
 TO BE SPECIFIED LATER
