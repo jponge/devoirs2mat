@@ -99,8 +99,8 @@ an empty state explaining that a course is needed first, with a button that open
       not move
     - the edit state exposes three editable fields: the text, the course, and the due date
     - the text is edited as raw Markdown in a text area. The rendered version comes back once editing ends
-    - `Save` commits the change, `Cancel` restores the values the entry had before editing, and `Escape` is equivalent
-      to `Cancel`. Nothing is written to the database until `Save`
+    - `Save` commits the change, `Cancel` restores the values the entry had before editing, `Escape` is equivalent
+      to `Cancel`, and Ctrl/Cmd+Enter is equivalent to `Save`. Nothing is written to the database until `Save`
 - Deleting a homework entry:
     - the delete button opens a confirmation dialog, and the entry is removed only once the deletion is confirmed
     - deletion is final: there is no undo and no trash. This is why it is confirmed and editing is not
@@ -121,6 +121,7 @@ It exposes further operations:
   that no longer exists
     - courses are created and renamed from that same list in the drawer. Renaming a course updates every entry at
       once, because an entry references the course and not its name
+    - while renaming, `Enter` commits and `Escape` cancels, the same pairing the homework edit form uses
     - a course also has a color, picked at random when it is created and changeable afterwards from the same list,
       through a curated swatch grid plus a hex field for an exact code. A color change writes immediately, with no
       confirmation, the same as the homework completion checkbox

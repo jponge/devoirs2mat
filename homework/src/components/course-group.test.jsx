@@ -461,6 +461,39 @@ describe("editing a homework entry", () => {
     expect(screen.getByDisplayValue("avant")).not.toBeNull();
   });
 
+  it.each([
+    ["Ctrl", { ctrlKey: true }],
+    ["Cmd", { metaKey: true }],
+  ])("treats %s+Enter as Save", async (_label, modifier) => {
+    await mount(<CourseGroup group={group(COURSE, [item({ text: "avant" })])} />);
+    await openEdit();
+    const field = screen.getByDisplayValue("avant");
+    fireEvent.change(field, { target: { value: "après" } });
+
+    fireEvent.keyDown(field, { key: "Enter", ...modifier });
+
+    await waitFor(() =>
+      expect(updateHomework).toHaveBeenCalledWith(1, {
+        text: "après",
+        dueDate: "2026-08-25",
+        courseId: 1,
+      }),
+    );
+  });
+
+  // Plain Enter must keep inserting a newline in the text area — only the
+  // modified form of Enter is a save shortcut.
+  it("does not treat plain Enter as Save", async () => {
+    await mount(<CourseGroup group={group(COURSE, [item({ text: "avant" })])} />);
+    await openEdit();
+    const field = screen.getByDisplayValue("avant");
+
+    fireEvent.keyDown(field, { key: "Enter" });
+
+    expect(updateHomework).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: en.homework.save })).not.toBeNull();
+  });
+
   // A homework entry's own course can already be archived when its edit is
   // opened — not just archived mid-edit (that path is covered below). Either
   // way, the picker never offers an archived course.

@@ -143,9 +143,13 @@ export function CourseEditor({ onError = () => {} }) {
 
   // Escape cancels what is being typed. Keeping the panel open while it does is
   // the sheet's side of the bargain — see `onEscapeKeyDown` in `side-panel.jsx`.
+  // Enter commits — this field is not inside a `<form>`, so unlike the add-course
+  // field below it gets no submit-on-Enter for free.
   const onRenameKeyDown = (event) => {
     if (event.key === "Escape") {
       cancelRename();
+    } else if (event.key === "Enter") {
+      commitRename();
     }
   };
 

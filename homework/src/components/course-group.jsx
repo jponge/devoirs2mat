@@ -114,6 +114,8 @@ export function HomeworkEditForm({
   const onKeyDown = (event) => {
     if (event.key === "Escape") {
       onCancel();
+    } else if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+      onSave();
     }
   };
 

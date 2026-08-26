@@ -387,6 +387,21 @@ describe("renaming a course", () => {
     await waitFor(() => expect(screen.getByText(ZOO.name)).not.toBeNull());
     expect(renameCourse).not.toHaveBeenCalled();
   });
+
+  // This field is not inside a `<form>`, unlike the add-course one above, so
+  // Enter needs its own handler to commit rather than doing nothing.
+  it("commits on Enter", async () => {
+    await mount();
+    const before = listCourses.mock.calls.length;
+    startRename(ZOO.name);
+    const field = screen.getByDisplayValue(ZOO.name);
+    fireEvent.change(field, { target: { value: "Botanique" } });
+
+    fireEvent.keyDown(field, { key: "Enter" });
+
+    await waitFor(() => expect(renameCourse).toHaveBeenCalledWith(ZOO.id, "Botanique"));
+    await waitFor(() => expect(listCourses.mock.calls.length).toBeGreaterThan(before));
+  });
 });
 
 describe("deleting a course", () => {
