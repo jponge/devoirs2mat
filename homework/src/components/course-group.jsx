@@ -144,6 +144,11 @@ export function HomeworkEditForm({
                 value={String(course.id)}
                 className={cn(!isActiveCourse(course) && "text-muted-foreground")}
               >
+                <span
+                  aria-hidden="true"
+                  className="size-2.5 shrink-0 rounded-full border border-border"
+                  style={{ backgroundColor: course.color }}
+                />
                 {course.name}
               </SelectItem>
             ))}
