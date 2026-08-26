@@ -6,15 +6,31 @@ import { formatFullDate, formatWeekRange } from "@/lib/format-dates";
 import en from "@/i18n/en.json";
 import fr from "@/i18n/fr.json";
 
-const { listCourses, listHomeworkBetween, setHomeworkDone } = vi.hoisted(() => ({
+const {
+  listCourses,
+  listHomeworkBetween,
+  setHomeworkDone,
+  createHomework,
+  updateHomework,
+  deleteHomework,
+} = vi.hoisted(() => ({
   listCourses: vi.fn(),
   listHomeworkBetween: vi.fn(),
   setHomeworkDone: vi.fn(),
+  createHomework: vi.fn(),
+  updateHomework: vi.fn(),
+  deleteHomework: vi.fn(),
 }));
 const { setLanguage } = vi.hoisted(() => ({ setLanguage: vi.fn() }));
 
 vi.mock("@/db/courses", () => ({ listCourses }));
-vi.mock("@/db/homework", () => ({ listHomeworkBetween, setHomeworkDone }));
+vi.mock("@/db/homework", () => ({
+  listHomeworkBetween,
+  setHomeworkDone,
+  createHomework,
+  updateHomework,
+  deleteHomework,
+}));
 // `setLanguage` is the real bridge to the database; the panel is tested against
 // the call, not against a write it cannot perform here.
 vi.mock("@/i18n/preference", () => ({ setLanguage }));
@@ -25,6 +41,9 @@ beforeEach(async () => {
   listCourses.mockResolvedValue([{ id: 1, name: "Maths", archived_at: null }]);
   listHomeworkBetween.mockResolvedValue([]);
   setHomeworkDone.mockResolvedValue(undefined);
+  createHomework.mockResolvedValue(2);
+  updateHomework.mockResolvedValue(undefined);
+  deleteHomework.mockResolvedValue(undefined);
   setLanguage.mockImplementation(async (language) => {
     await i18n.changeLanguage(language);
   });
@@ -634,5 +653,148 @@ describe("a failing homework write in the weekly view", () => {
     await waitFor(() => {
       expect(screen.getByText(en.errors.saveFailed)).not.toBeNull();
     });
+  });
+});
+
+describe("quick-add", () => {
+  it("creates an entry from the daily list, fixed to the selected day", async () => {
+    await mount();
+    const [today] = lastRange();
+
+    fireEvent.click(screen.getByRole("button", { name: en.homework.add }));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Exercice 4" } });
+    fireEvent.click(screen.getByRole("button", { name: en.homework.save }));
+
+    await waitFor(() =>
+      expect(createHomework).toHaveBeenCalledWith({
+        text: "Exercice 4",
+        dueDate: today,
+        courseId: 1,
+        createdAt: expect.any(String),
+      }),
+    );
+  });
+
+  // Each day block carries its own quick-add button with the same accessible
+  // name, so this has to scope its query to a single block.
+  it("is reachable from a weekly day block too, fixed to that day's date", async () => {
+    await mount();
+    goWeekly();
+    const [monday] = lastRange();
+    const mondayBlock = (await screen.findAllByTestId("day-block"))[0];
+
+    fireEvent.click(within(mondayBlock).getByRole("button", { name: en.homework.add }));
+    fireEvent.click(within(mondayBlock).getByRole("button", { name: en.homework.save }));
+
+    await waitFor(() =>
+      expect(createHomework).toHaveBeenCalledWith(
+        expect.objectContaining({ dueDate: monday }),
+      ),
+    );
+  });
+
+  it("reports a failed create rather than failing silently", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    createHomework.mockRejectedValue(new Error("database is locked"));
+    await mount();
+
+    fireEvent.click(screen.getByRole("button", { name: en.homework.add }));
+    fireEvent.click(screen.getByRole("button", { name: en.homework.save }));
+
+    await waitFor(() => expect(screen.getByText(en.errors.saveFailed)).not.toBeNull());
+  });
+});
+
+describe("editing and deleting a homework entry", () => {
+  // The due date has to track whatever day `AppDataProvider` actually selects
+  // (the real local date, since `mount()` gives it none of its own), the same
+  // way `App.test.jsx`'s daily-view test does — a date hard-coded here would
+  // only coincidentally match `selectedDate` on the day these tests are run.
+  function seedOneEntry(overrides = {}) {
+    listHomeworkBetween.mockImplementation(async (from) => [
+      {
+        id: 1,
+        text: "Exercice 4",
+        due_date: from,
+        course_id: 1,
+        done: 0,
+        created_at: "2026-08-20T08:00:00Z",
+        ...overrides,
+      },
+    ]);
+  }
+
+  it("edits an entry in place", async () => {
+    seedOneEntry();
+    await mount();
+    const [today] = lastRange();
+
+    fireEvent.click(screen.getByRole("button", { name: en.homework.edit }));
+    fireEvent.change(screen.getByDisplayValue("Exercice 4"), {
+      target: { value: "Exercice 4 et 5" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: en.homework.save }));
+
+    await waitFor(() =>
+      expect(updateHomework).toHaveBeenCalledWith(1, {
+        text: "Exercice 4 et 5",
+        dueDate: today,
+        courseId: 1,
+      }),
+    );
+  });
+
+  // The one case that only a full render can exercise honestly: a course
+  // archived after the entry was created must stay a keepable option, not
+  // vanish out from under a student who opens edit without meaning to touch it.
+  it("keeps an archived course selectable, muted, when editing its entry", async () => {
+    listCourses.mockResolvedValue([
+      { id: 1, name: "Maths", archived_at: null },
+      { id: 2, name: "Histoire", archived_at: "2026-01-01T00:00:00Z" },
+    ]);
+    seedOneEntry({ course_id: 2 });
+    await mount();
+
+    fireEvent.click(screen.getByRole("button", { name: en.homework.edit }));
+
+    expect(screen.getByRole("combobox").textContent).toBe("Histoire");
+    fireEvent.click(screen.getByRole("combobox"));
+    expect(await screen.findByRole("option", { name: "Histoire" })).not.toBeNull();
+  });
+
+  it("deletes an entry once the confirmation is accepted", async () => {
+    seedOneEntry();
+    await mount();
+
+    fireEvent.click(screen.getByRole("button", { name: en.homework.delete }));
+    await waitFor(() => expect(screen.getByRole("alertdialog")).not.toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: en.homework.deleteConfirm }));
+
+    await waitFor(() => expect(deleteHomework).toHaveBeenCalledWith(1));
+  });
+
+  it("reports a failed update rather than failing silently", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    updateHomework.mockRejectedValue(new Error("database is locked"));
+    seedOneEntry();
+    await mount();
+
+    fireEvent.click(screen.getByRole("button", { name: en.homework.edit }));
+    fireEvent.click(screen.getByRole("button", { name: en.homework.save }));
+
+    await waitFor(() => expect(screen.getByText(en.errors.saveFailed)).not.toBeNull());
+  });
+
+  it("reports a failed delete rather than failing silently", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    deleteHomework.mockRejectedValue(new Error("database is locked"));
+    seedOneEntry();
+    await mount();
+
+    fireEvent.click(screen.getByRole("button", { name: en.homework.delete }));
+    await waitFor(() => expect(screen.getByRole("alertdialog")).not.toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: en.homework.deleteConfirm }));
+
+    await waitFor(() => expect(screen.getByText(en.errors.saveFailed)).not.toBeNull());
   });
 });

@@ -119,11 +119,15 @@ describe("a failing homework write", () => {
   // CourseGroup, the same reasoning `boot.test.jsx` applies to `startupError`.
   it("toasts through the whole chain rather than failing silently", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
-    listHomeworkBetween.mockResolvedValue([
+    // The due date has to track whatever day `AppDataProvider` actually
+    // selects (the real local date, since `render(<App />)` gives it none of
+    // its own) rather than a date hard-coded here, which only coincidentally
+    // matches `selectedDate` on the day this test happens to run.
+    listHomeworkBetween.mockImplementation(async (from) => [
       {
         id: 1,
         text: "Exercice 4 page 12",
-        due_date: "2026-08-25",
+        due_date: from,
         course_id: 1,
         done: 0,
         created_at: "2026-08-20T08:00:00Z",

@@ -3,6 +3,7 @@
 import { useTranslation } from "react-i18next";
 import { useAppData } from "@/components/app-data";
 import { CourseGroup, EmptyLine } from "@/components/course-group";
+import { QuickAddHomework } from "@/components/quick-add-homework";
 import { groupByCourse } from "@/lib/grouping";
 
 export function DailyView({ onError }) {
@@ -19,12 +20,13 @@ export function DailyView({ onError }) {
   );
 
   return (
-    <section className="flex animate-in flex-col gap-4 fade-in duration-300">
+    <section className="group flex animate-in flex-col gap-4 fade-in duration-300">
       {groups.length === 0 ? (
         <EmptyLine>{t("homework.empty")}</EmptyLine>
       ) : (
         groups.map((group) => <CourseGroup key={group.course.id} group={group} onError={onError} />)
       )}
+      <QuickAddHomework dueDate={selectedDate} onError={onError} />
     </section>
   );
 }

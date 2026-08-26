@@ -17,7 +17,20 @@
   },
   "homework": {
     "empty": "Rien à rendre",
-    "toggleDone": "Marquer comme fait"
+    "toggleDone": "Marquer comme fait",
+    "add": "Ajouter un devoir",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "textPlaceholder": "Écris-le ici…",
+    "course": "Matière",
+    "dueDate": "Date à rendre",
+    "courseRequired": "Choisis une matière.",
+    "deleteTitle": "Supprimer ce devoir ?",
+    "deleteBody": "Tu ne pourras pas revenir en arrière.",
+    "deleteConfirm": "Supprimer",
+    "deleteCancel": "Annuler"
   },
   "sidePanel": {
     "title": "Réglages",

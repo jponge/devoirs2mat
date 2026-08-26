@@ -10,6 +10,7 @@
 import { useTranslation } from "react-i18next";
 import { useAppData } from "@/components/app-data";
 import { CourseGroup, EmptyLine } from "@/components/course-group";
+import { QuickAddHomework } from "@/components/quick-add-homework";
 import { groupWeek } from "@/lib/grouping";
 import { weekDays } from "@/lib/dates";
 import { formatDayHeading } from "@/lib/format-dates";
@@ -20,7 +21,7 @@ function DayBlock({ day, language, onError }) {
   return (
     <section
       data-testid="day-block"
-      className="flex animate-in flex-col gap-3 rounded-lg border p-4 fade-in duration-300"
+      className="group flex animate-in flex-col gap-3 rounded-lg border p-4 fade-in duration-300"
     >
       <h2 className="text-sm font-semibold">{formatDayHeading(day.date, language)}</h2>
       {day.groups.length === 0 ? (
@@ -30,6 +31,7 @@ function DayBlock({ day, language, onError }) {
           <CourseGroup key={group.course.id} group={group} onError={onError} />
         ))
       )}
+      <QuickAddHomework dueDate={day.date} onError={onError} />
     </section>
   );
 }

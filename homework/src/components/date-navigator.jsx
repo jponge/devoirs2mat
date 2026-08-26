@@ -17,51 +17,7 @@ import {
 import { useAppData } from "@/components/app-data";
 import { fromLocalDate, toLocalDate, weekDays } from "@/lib/dates";
 import { formatFullDate, formatWeekRange } from "@/lib/format-dates";
-
-// react-day-picker localises itself through a date-fns `locale` object. We do
-// not have one and deliberately do not want one — `date-fns` arrives only as a
-// transitive dependency of react-day-picker and is not even resolvable from our
-// code — so the strings it would provide come from `Intl` instead, which is what
-// `specs/technical-stack.md` asks for anyway.
-//
-// `formatters` covers what is drawn; `labels` covers what is announced. Without
-// the second half the picker still reads its month and its days in English to a
-// screen reader while showing French on screen.
-function intlFormatters(language) {
-  return {
-    formatCaption: (date) =>
-      new Intl.DateTimeFormat(language, {
-        month: "long",
-        year: "numeric",
-      }).format(date),
-    formatWeekdayName: (date) =>
-      new Intl.DateTimeFormat(language, { weekday: "short" }).format(date),
-    formatMonthDropdown: (date) =>
-      new Intl.DateTimeFormat(language, { month: "long" }).format(date),
-  };
-}
-
-function intlLabels(language, t) {
-  return {
-    labelGrid: (date) =>
-      new Intl.DateTimeFormat(language, {
-        month: "long",
-        year: "numeric",
-      }).format(date),
-    labelWeekday: (date) =>
-      new Intl.DateTimeFormat(language, { weekday: "long" }).format(date),
-    labelDayButton: (date) =>
-      new Intl.DateTimeFormat(language, {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      }).format(date),
-    labelNav: () => t("topBar.calendarNav"),
-    labelPrevious: () => t("topBar.previousMonth"),
-    labelNext: () => t("topBar.nextMonth"),
-  };
-}
+import { intlFormatters, intlLabels } from "@/lib/calendar-intl";
 
 export function DateNavigator() {
   const { t, i18n } = useTranslation();

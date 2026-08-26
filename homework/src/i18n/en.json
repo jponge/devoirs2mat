@@ -17,7 +17,20 @@
   },
   "homework": {
     "empty": "Nothing due",
-    "toggleDone": "Mark as done"
+    "toggleDone": "Mark as done",
+    "add": "Add homework",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "textPlaceholder": "Write it here…",
+    "course": "Course",
+    "dueDate": "Due date",
+    "courseRequired": "Choose a course.",
+    "deleteTitle": "Delete this homework?",
+    "deleteBody": "You can’t undo this.",
+    "deleteConfirm": "Delete",
+    "deleteCancel": "Cancel"
   },
   "sidePanel": {
     "title": "Settings",

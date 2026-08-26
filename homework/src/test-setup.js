@@ -60,3 +60,10 @@ if (typeof window !== "undefined" && window.matchMedia === undefined) {
     dispatchEvent: () => false,
   });
 }
+
+// The shadcn `select` component (Radix `Select`) scrolls its highlighted item
+// into view when the listbox opens, milestone 9's course picker. jsdom lays
+// out nothing, so there is no scrolling to do — the stub just has to exist.
+if (typeof Element !== "undefined" && Element.prototype.scrollIntoView === undefined) {
+  Element.prototype.scrollIntoView = () => {};
+}
