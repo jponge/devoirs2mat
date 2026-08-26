@@ -15,12 +15,12 @@ import {
 describe("formatFullDate", () => {
   it("reads as a long date in each language", () => {
     expect(formatFullDate("2026-08-24", "en")).toBe("Monday, August 24, 2026");
-    expect(formatFullDate("2026-08-24", "fr")).toBe("lundi 24 août 2026");
+    expect(formatFullDate("2026-08-24", "fr")).toBe("Lundi 24 août 2026");
   });
 
   it("handles 29 February in a leap year", () => {
     expect(formatFullDate("2028-02-29", "en")).toBe("Tuesday, February 29, 2028");
-    expect(formatFullDate("2028-02-29", "fr")).toBe("mardi 29 février 2028");
+    expect(formatFullDate("2028-02-29", "fr")).toBe("Mardi 29 février 2028");
   });
 
   // A malformed date must fail where the mistake was made rather than put
@@ -81,7 +81,7 @@ describe("formatWeekRange", () => {
 describe("formatDayHeading", () => {
   it("names the weekday and the day", () => {
     expect(formatDayHeading("2026-08-24", "en")).toBe("Monday, August 24");
-    expect(formatDayHeading("2026-08-24", "fr")).toBe("lundi 24 août");
+    expect(formatDayHeading("2026-08-24", "fr")).toBe("Lundi 24 août");
   });
 
   // The month is deliberately part of the heading. Without it `en` renders
@@ -90,7 +90,7 @@ describe("formatDayHeading", () => {
   // both reading "1" with nothing to tell them apart.
   it("keeps the month, so a week crossing one stays readable", () => {
     expect(formatDayHeading("2026-09-06", "en")).toBe("Sunday, September 6");
-    expect(formatDayHeading("2026-09-06", "fr")).toBe("dimanche 6 septembre");
+    expect(formatDayHeading("2026-09-06", "fr")).toBe("Dimanche 6 septembre");
   });
 });
 
@@ -115,8 +115,8 @@ describe("in a negative-offset zone", () => {
     );
 
     expect(formatFullDate("2026-08-24", "en")).toBe("Monday, August 24, 2026");
-    expect(formatFullDate("2026-08-24", "fr")).toBe("lundi 24 août 2026");
-    expect(formatDayHeading("2026-08-24", "fr")).toBe("lundi 24 août");
+    expect(formatFullDate("2026-08-24", "fr")).toBe("Lundi 24 août 2026");
+    expect(formatDayHeading("2026-08-24", "fr")).toBe("Lundi 24 août");
     expect(formatWeekRange("2026-08-24", "2026-08-30", "fr")).toBe(
       "24\u201330 ao\u00fbt 2026",
     );

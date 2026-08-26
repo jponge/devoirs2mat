@@ -100,7 +100,7 @@ export function QuickAddHomework({ dueDate, onError = () => {} }) {
   }
 
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-dashed p-3">
+    <div className="flex items-start gap-3 rounded-2xl border border-dashed bg-card p-3">
       <HomeworkEditForm
         text={draft.text}
         courseId={draft.courseId}

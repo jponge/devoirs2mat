@@ -274,7 +274,7 @@ function HomeworkCard({ item, courses, locale, onToggle, onSave, onDelete, onErr
 
   if (editing) {
     return (
-      <div className="flex items-start gap-3 rounded-2xl border p-3">
+      <div className="flex items-start gap-3 rounded-2xl border bg-card p-3 shadow-xs">
         <HomeworkEditForm
           text={draft.text}
           courseId={draft.courseId}
@@ -296,7 +296,7 @@ function HomeworkCard({ item, courses, locale, onToggle, onSave, onDelete, onErr
   }
 
   return (
-    <div className="group flex items-start gap-3 rounded-2xl border p-3">
+    <div className="group flex items-start gap-3 rounded-2xl border bg-card p-3 shadow-xs">
       <Checkbox
         checked={done}
         aria-label={t("homework.toggleDone")}

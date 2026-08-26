@@ -199,8 +199,8 @@ describe("the top bar", () => {
     const headings = screen
       .getAllByTestId("day-block")
       .map((block) => block.querySelector("h2").textContent);
-    expect(headings[0].startsWith("lundi")).toBe(true);
-    expect(headings[6].startsWith("dimanche")).toBe(true);
+    expect(headings[0].startsWith("Lundi")).toBe(true);
+    expect(headings[6].startsWith("Dimanche")).toBe(true);
   });
 
   // The two landmarks a screen reader announces come from libraries, not from
@@ -268,8 +268,8 @@ describe("the date picker", () => {
     await waitFor(() => expect(screen.getByRole("grid")).not.toBeNull());
     const headers = weekdayNames();
     // Localised through `Intl`, not through a date-fns locale object.
-    expect(headers[0].startsWith("lun")).toBe(true);
-    expect(headers[6].startsWith("dim")).toBe(true);
+    expect(headers[0].startsWith("Lun")).toBe(true);
+    expect(headers[6].startsWith("Dim")).toBe(true);
   });
 
   it("names the month in the active language", async () => {
@@ -283,7 +283,7 @@ describe("the date picker", () => {
     // builds it from its own labels, which stay English unless they are given
     // `Intl` versions as well.
     expect(screen.getByRole("grid").getAttribute("aria-label")).toMatch(
-      /janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre/,
+      /Janvier|Février|Mars|Avril|Mai|Juin|Juillet|Août|Septembre|Octobre|Novembre|Décembre/,
     );
   });
 

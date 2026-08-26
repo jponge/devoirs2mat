@@ -12,7 +12,7 @@ export function TopBar({ onLanguageError, onCourseError, onBackupError, panelOpe
   const { view, setView } = useAppData();
 
   return (
-    <header className="sticky top-0 z-10 flex flex-wrap items-center justify-end gap-3 border-b bg-background px-4 py-3">
+    <header className="sticky top-0 z-10 flex flex-wrap items-center justify-end gap-3 border-b bg-card px-4 py-3 shadow-xs">
       {/* The window title already names the application; showing it again here
           was clutter. The heading stays for screen readers, so the document
           still has an `h1` above the `h2` day headings, and is never

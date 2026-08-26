@@ -13,36 +13,62 @@
 // `course-group.jsx`'s edit-in-place form: this used to be a pair of
 // functions local to `date-navigator.jsx` before the edit-in-place picker
 // needed the exact same localisation.
+import { capitalizeFirst } from "@/lib/format-dates.js";
+
 export function intlFormatters(language) {
   return {
+    // The visible month/year heading above the grid, e.g. "Août 2026" —
+    // capitalized like the weekday row right below it, so the two don't clash
+    // on the same popover.
     formatCaption: (date) =>
-      new Intl.DateTimeFormat(language, {
-        month: "long",
-        year: "numeric",
-      }).format(date),
+      capitalizeFirst(
+        new Intl.DateTimeFormat(language, {
+          month: "long",
+          year: "numeric",
+        }).format(date),
+        language,
+      ),
+    // Column headers, e.g. "lun." — capitalized to match the day headings and
+    // date displays elsewhere, which read "Lundi 24 août" rather than French's
+    // default lowercase weekday names.
     formatWeekdayName: (date) =>
-      new Intl.DateTimeFormat(language, { weekday: "short" }).format(date),
+      capitalizeFirst(
+        new Intl.DateTimeFormat(language, { weekday: "short" }).format(date),
+        language,
+      ),
     formatMonthDropdown: (date) =>
-      new Intl.DateTimeFormat(language, { month: "long" }).format(date),
+      capitalizeFirst(
+        new Intl.DateTimeFormat(language, { month: "long" }).format(date),
+        language,
+      ),
   };
 }
 
 export function intlLabels(language, t) {
   return {
     labelGrid: (date) =>
-      new Intl.DateTimeFormat(language, {
-        month: "long",
-        year: "numeric",
-      }).format(date),
+      capitalizeFirst(
+        new Intl.DateTimeFormat(language, {
+          month: "long",
+          year: "numeric",
+        }).format(date),
+        language,
+      ),
     labelWeekday: (date) =>
-      new Intl.DateTimeFormat(language, { weekday: "long" }).format(date),
+      capitalizeFirst(
+        new Intl.DateTimeFormat(language, { weekday: "long" }).format(date),
+        language,
+      ),
     labelDayButton: (date) =>
-      new Intl.DateTimeFormat(language, {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      }).format(date),
+      capitalizeFirst(
+        new Intl.DateTimeFormat(language, {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }).format(date),
+        language,
+      ),
     labelNav: () => t("topBar.calendarNav"),
     labelPrevious: () => t("topBar.previousMonth"),
     labelNext: () => t("topBar.nextMonth"),

@@ -30,19 +30,28 @@ function cachedFormatter(cache, language, options) {
   return formatter;
 }
 
+// French weekday and month names read lowercase by default (`Intl` follows
+// standard French typography), but the heading style here wants a capital
+// leading letter regardless of language — a no-op where `Intl` already
+// capitalizes it, as it does in English.
+export function capitalizeFirst(text, language) {
+  return text.charAt(0).toLocaleUpperCase(language) + text.slice(1);
+}
+
 const fullDateFormatters = new Map();
 const weekRangeFormatters = new Map();
 const dayHeadingFormatters = new Map();
 
 // The date the top bar shows in daily view: "Monday, August 24, 2026",
-// "lundi 24 août 2026".
+// "Lundi 24 août 2026".
 export function formatFullDate(date, language) {
-  return cachedFormatter(fullDateFormatters, language, {
+  const formatted = cachedFormatter(fullDateFormatters, language, {
     weekday: "long",
     day: "numeric",
     month: "long",
     year: "numeric",
   }).format(toLocalDate(date));
+  return capitalizeFirst(formatted, language);
 }
 
 // The week the top bar shows in weekly view. `formatRange` collapses whatever
@@ -58,16 +67,17 @@ export function formatWeekRange(startDate, endDate, language) {
   }).formatRange(toLocalDate(startDate), toLocalDate(endDate));
 }
 
-// The heading on a weekly day block: "Monday, August 24", "lundi 24 août".
+// The heading on a weekly day block: "Monday, August 24", "Lundi 24 août".
 //
 // The month is included on purpose. Asked for a weekday and a day alone, ICU
 // falls back to a pattern that renders `en` as "24 Monday"; and a week that
 // crosses a month would otherwise end with two blocks both reading "1" with
 // nothing to tell them apart. The year is left out — the top bar carries it.
 export function formatDayHeading(date, language) {
-  return cachedFormatter(dayHeadingFormatters, language, {
+  const formatted = cachedFormatter(dayHeadingFormatters, language, {
     weekday: "long",
     day: "numeric",
     month: "long",
   }).format(toLocalDate(date));
+  return capitalizeFirst(formatted, language);
 }

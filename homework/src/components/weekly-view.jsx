@@ -24,7 +24,7 @@ function DayBlock({ day, language, onError }) {
     // retriggers on navigation instead of only ever playing once.
     <section
       data-testid="day-block"
-      className="group flex animate-in flex-col gap-3 rounded-lg border p-4 fade-in duration-300"
+      className="group flex animate-in flex-col gap-3 rounded-lg border bg-card p-4 shadow-xs fade-in duration-300"
     >
       <h2 className="text-sm font-semibold">{formatDayHeading(day.date, language)}</h2>
       {day.groups.length === 0 ? (
