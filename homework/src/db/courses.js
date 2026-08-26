@@ -13,16 +13,16 @@ import { getDatabase } from "@/db/client";
 export async function listCourses() {
   const db = await getDatabase();
   return db.select(
-    "SELECT id, name, archived_at, created_at FROM courses ORDER BY created_at, id",
+    "SELECT id, name, color, archived_at, created_at FROM courses ORDER BY created_at, id",
   );
 }
 
 // Returns the new course id.
-export async function createCourse(name, createdAt) {
+export async function createCourse(name, color, createdAt) {
   const db = await getDatabase();
   const { lastInsertId } = await db.execute(
-    "INSERT INTO courses (name, archived_at, created_at) VALUES ($1, NULL, $2)",
-    [name, createdAt],
+    "INSERT INTO courses (name, color, archived_at, created_at) VALUES ($1, $2, NULL, $3)",
+    [name, color, createdAt],
   );
   return lastInsertId;
 }
@@ -30,6 +30,11 @@ export async function createCourse(name, createdAt) {
 export async function renameCourse(id, name) {
   const db = await getDatabase();
   await db.execute("UPDATE courses SET name = $1 WHERE id = $2", [name, id]);
+}
+
+export async function setCourseColor(id, color) {
+  const db = await getDatabase();
+  await db.execute("UPDATE courses SET color = $1 WHERE id = $2", [color, id]);
 }
 
 // Deleting a course in the user interface archives it. Nothing in this file

@@ -37,10 +37,10 @@ const INSTANT = "2026-08-21T09:14:03Z";
 let db;
 
 // A course row is needed before most homework rows can exist.
-function insertCourse(name, archivedAt = null) {
+function insertCourse(name, archivedAt = null, color = "#ef4444") {
   db.prepare(
-    "INSERT INTO courses (name, archived_at, created_at) VALUES (?, ?, ?)",
-  ).run(name, archivedAt, INSTANT);
+    "INSERT INTO courses (name, color, archived_at, created_at) VALUES (?, ?, ?, ?)",
+  ).run(name, color, archivedAt, INSTANT);
 }
 
 function insertHomework({ text = "", dueDate = "2026-08-25", courseId = 1, done = 0 }) {
@@ -71,6 +71,16 @@ describe("courses", () => {
   it("allows re-creating a name whose course was archived", () => {
     insertCourse("Zoologie", INSTANT);
     expect(() => insertCourse("Zoologie")).not.toThrow();
+  });
+
+  it("accepts a well-formed lowercase hex color", () => {
+    expect(() => insertCourse("Zoologie", null, "#ef4444")).not.toThrow();
+  });
+
+  it("rejects a color that is not lowercase 6-digit hex", () => {
+    for (const color of ["ef4444", "#EF4444", "#fff", "#ef44444", "#gggggg", ""]) {
+      expect(() => insertCourse("Zoologie", null, color)).toThrow(/CHECK constraint failed/);
+    }
   });
 });
 

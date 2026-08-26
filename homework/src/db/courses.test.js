@@ -3,6 +3,7 @@ import {
   listCourses,
   createCourse,
   renameCourse,
+  setCourseColor,
   archiveCourse,
 } from "@/db/courses";
 
@@ -37,7 +38,7 @@ describe("listCourses", () => {
   it("reads every column a course has", async () => {
     await listCourses();
 
-    for (const column of ["id", "name", "archived_at", "created_at"]) {
+    for (const column of ["id", "name", "color", "archived_at", "created_at"]) {
       expect(lastSql(select)).toContain(column);
     }
   });
@@ -56,15 +57,15 @@ describe("createCourse", () => {
   it("inserts an active course and returns its new id", async () => {
     execute.mockResolvedValue({ rowsAffected: 1, lastInsertId: 7 });
 
-    const id = await createCourse("Zoologie", "2026-08-21T09:14:03Z");
+    const id = await createCourse("Zoologie", "#ef4444", "2026-08-21T09:14:03Z");
 
     expect(id).toBe(7);
-    expect(lastValues(execute)).toEqual(["Zoologie", "2026-08-21T09:14:03Z"]);
+    expect(lastValues(execute)).toEqual(["Zoologie", "#ef4444", "2026-08-21T09:14:03Z"]);
     expect(lastSql(execute)).toMatch(/insert\s+into\s+courses/i);
   });
 
   it("leaves archived_at null so the course counts as active", async () => {
-    await createCourse("Zoologie", "2026-08-21T09:14:03Z");
+    await createCourse("Zoologie", "#ef4444", "2026-08-21T09:14:03Z");
 
     expect(lastSql(execute)).toMatch(/null/i);
   });
@@ -78,6 +79,15 @@ describe("renameCourse", () => {
 
     expect(lastSql(execute)).toMatch(/update\s+courses\s+set\s+name/i);
     expect(lastValues(execute)).toEqual(["Zoologie appliquée", 7]);
+  });
+});
+
+describe("setCourseColor", () => {
+  it("updates the color of one course", async () => {
+    await setCourseColor(7, "#3b82f6");
+
+    expect(lastSql(execute)).toMatch(/update\s+courses\s+set\s+color/i);
+    expect(lastValues(execute)).toEqual(["#3b82f6", 7]);
   });
 });
 
@@ -96,8 +106,9 @@ describe("the courses module as a whole", () => {
   // sees on old entries.
   it("issues no DELETE against courses", async () => {
     await listCourses();
-    await createCourse("Zoologie", "2026-08-21T09:14:03Z");
+    await createCourse("Zoologie", "#ef4444", "2026-08-21T09:14:03Z");
     await renameCourse(7, "Zoologie appliquée");
+    await setCourseColor(7, "#3b82f6");
     await archiveCourse(7, "2026-08-23T17:00:00Z");
 
     const everySql = [...select.mock.calls, ...execute.mock.calls].map(

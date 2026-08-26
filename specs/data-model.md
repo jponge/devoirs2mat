@@ -33,6 +33,7 @@ displaying its real name forever, and so that a SQL export never refers to a cou
 |---------------|-----------------|--------------------------------------------------------------------|
 | `id`          | INTEGER PK      | autoincrement                                                       |
 | `name`        | TEXT NOT NULL   | non-empty, as typed by the user                                     |
+| `color`       | TEXT NOT NULL   | `#rrggbb`, lowercase hex; chosen at creation, changeable afterwards |
 | `archived_at` | TEXT NULL       | `NULL` means active; an instant means deleted by the user           |
 | `created_at`  | TEXT NOT NULL   | instant                                                             |
 
@@ -41,6 +42,7 @@ displaying its real name forever, and so that a SQL export never refers to a cou
 CREATE TABLE courses (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     name        TEXT NOT NULL CHECK (length(trim(name)) > 0),  -- see the note below: trim() strips spaces only
+    color       TEXT NOT NULL CHECK (color GLOB '#[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]'),
     archived_at TEXT,
     created_at  TEXT NOT NULL
 );
@@ -53,6 +55,11 @@ CREATE UNIQUE INDEX courses_active_name ON courses (name) WHERE archived_at IS N
 SQLite's `trim()` strips U+0020 and nothing else, so that `CHECK` rejects `'   '` but accepts a name made only of
 tabs, newlines or non-breaking spaces. The unique index does not normalise either, so `'Maths'` and `'Maths '` are two
 distinct active courses. Treat the constraint as a backstop, not as validation: the course form trims before it saves.
+
+`color`'s `CHECK` spells `[0-9a-f]` out six times rather than a `LIKE`-style wildcard, the same reasoning `due_date`'s
+pattern documents below: `_` is a `LIKE` wildcard, not a `GLOB` one. Lowercase only, always six digits, always
+prefixed with `#`. There is no uniqueness constraint on it — two courses may share a color. Like the name check, this
+is a backstop, not validation: the application layer normalizes to lowercase before it ever writes.
 
 Deleting a course in the user interface sets `archived_at`. Nothing ever issues `DELETE FROM courses`.
 

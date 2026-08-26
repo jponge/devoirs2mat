@@ -25,7 +25,7 @@ import { generateExport, validateExport } from "@/lib/sql-export";
 const EXPORT_QUERY = `
 SELECT json_object(
   'courses', (SELECT COALESCE(json_group_array(json_object(
-    'id', id, 'name', name, 'archived_at', archived_at, 'created_at', created_at
+    'id', id, 'name', name, 'color', color, 'archived_at', archived_at, 'created_at', created_at
   )), '[]') FROM courses),
   'homework', (SELECT COALESCE(json_group_array(json_object(
     'id', id, 'text', text, 'due_date', due_date, 'course_id', course_id, 'done', done, 'created_at', created_at

@@ -56,7 +56,7 @@ vi.mock("@/i18n/preference", () => ({ setLanguage, startLanguage }));
 beforeEach(async () => {
   // At least one course, deliberately: with none, the main view shows the
   // first-run empty state instead of the day or the week.
-  listCourses.mockResolvedValue([{ id: 1, name: "Maths", archived_at: null }]);
+  listCourses.mockResolvedValue([{ id: 1, name: "Maths", color: "#3b82f6", archived_at: null }]);
   listHomeworkBetween.mockResolvedValue([]);
   setHomeworkDone.mockResolvedValue(undefined);
   createCourse.mockResolvedValue(2);
@@ -484,7 +484,7 @@ describe("the daily view", () => {
   // homework while the next read is in flight, and keeps it for good when that
   // read fails. Only the selected day may ever reach the screen.
   it("renders only the homework due on the selected day", async () => {
-    listCourses.mockResolvedValue([{ id: 1, name: "Maths", archived_at: null }]);
+    listCourses.mockResolvedValue([{ id: 1, name: "Maths", color: "#3b82f6", archived_at: null }]);
     listHomeworkBetween.mockImplementation(async (from) => [
       { id: 1, course_id: 1, due_date: from, title: "today" },
       { id: 2, course_id: 1, due_date: "1999-01-01", title: "another day" },
@@ -496,7 +496,7 @@ describe("the daily view", () => {
   });
 
   it("shows the muted empty line when nothing is due that day", async () => {
-    listCourses.mockResolvedValue([{ id: 1, name: "Maths", archived_at: null }]);
+    listCourses.mockResolvedValue([{ id: 1, name: "Maths", color: "#3b82f6", archived_at: null }]);
     listHomeworkBetween.mockResolvedValue([
       { id: 2, course_id: 1, due_date: "1999-01-01", title: "another day" },
     ]);
@@ -649,7 +649,7 @@ describe("the first run", () => {
   // their only course in a view with no way back to the button that makes one.
   it("comes back when the last active course is archived", async () => {
     listCourses.mockResolvedValue([
-      { id: 1, name: "Maths", archived_at: "2026-08-25T10:00:00Z" },
+      { id: 1, name: "Maths", color: "#3b82f6", archived_at: "2026-08-25T10:00:00Z" },
     ]);
 
     await mount();
@@ -791,21 +791,23 @@ describe("editing and deleting a homework entry", () => {
   });
 
   // The one case that only a full render can exercise honestly: a course
-  // archived after the entry was created must stay a keepable option, not
-  // vanish out from under a student who opens edit without meaning to touch it.
-  it("keeps an archived course selectable, muted, when editing its entry", async () => {
+  // archived after the entry was created is not offered as an option once its
+  // edit is opened — reassigning always means picking a course that still
+  // exists, even if that means the picker starts out on no valid selection.
+  it("does not offer an archived course when editing an entry that belongs to it", async () => {
     listCourses.mockResolvedValue([
-      { id: 1, name: "Maths", archived_at: null },
-      { id: 2, name: "Histoire", archived_at: "2026-01-01T00:00:00Z" },
+      { id: 1, name: "Maths", color: "#3b82f6", archived_at: null },
+      { id: 2, name: "Histoire", color: "#f97316", archived_at: "2026-01-01T00:00:00Z" },
     ]);
     seedOneEntry({ course_id: 2 });
     await mount();
 
     fireEvent.click(screen.getByRole("button", { name: en.homework.edit }));
 
-    expect(screen.getByRole("combobox").textContent).toBe("Histoire");
+    expect(screen.getByRole("combobox").textContent).toBe("");
     fireEvent.click(screen.getByRole("combobox"));
-    expect(await screen.findByRole("option", { name: "Histoire" })).not.toBeNull();
+    expect(await screen.findByRole("option", { name: "Maths" })).not.toBeNull();
+    expect(screen.queryByRole("option", { name: "Histoire" })).toBeNull();
   });
 
   it("deletes an entry once the confirmation is accepted", async () => {

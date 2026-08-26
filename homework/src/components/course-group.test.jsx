@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { AppDataProvider } from "@/components/app-data";
+import { AppDataProvider, useAppData } from "@/components/app-data";
 import { CourseGroup, MarkdownLink } from "@/components/course-group";
 import i18n from "@/i18n";
 import en from "@/i18n/en.json";
@@ -24,7 +24,16 @@ vi.mock("@/db/homework", () => ({
 }));
 vi.mock("@tauri-apps/plugin-opener", () => ({ openUrl }));
 
-const COURSE = { id: 1, name: "Maths", archived_at: null };
+const COURSE = { id: 1, name: "Maths", color: "#22c55e", archived_at: null };
+
+// jsdom normalizes a color assigned to `style.borderColor` (e.g. hex to
+// `rgb(...)`) the same way a real browser would, so comparing against a probe
+// element sidesteps hardcoding that format here.
+function borderColorFor(hex) {
+  const probe = document.createElement("div");
+  probe.style.borderColor = hex;
+  return probe.style.borderColor;
+}
 
 const item = (overrides = {}) => ({
   id: 1,
@@ -37,6 +46,15 @@ const item = (overrides = {}) => ({
 });
 
 const group = (course, items) => ({ course, homework: items });
+
+// Reads context state `CourseGroup` itself never renders, for the one test
+// proving a saved edit updates the in-memory "last used course" that
+// `QuickAddHomework` defaults to next — that value has no visible effect
+// inside `CourseGroup`'s own markup.
+function LastUsedCourseProbe() {
+  const { lastUsedCourseId } = useAppData();
+  return <div data-testid="last-used-course">{String(lastUsedCourseId)}</div>;
+}
 
 beforeEach(async () => {
   listCourses.mockResolvedValue([COURSE]);
@@ -63,7 +81,7 @@ async function mount(ui) {
 
 describe("a course group", () => {
   it("shows the course name", async () => {
-    await mount(<CourseGroup group={group({ id: 1, name: "Maths", archived_at: null }, [item()])} />);
+    await mount(<CourseGroup group={group({ id: 1, name: "Maths", color: "#22c55e", archived_at: null }, [item()])} />);
 
     expect(screen.getByRole("heading", { name: "Maths" })).not.toBeNull();
   });
@@ -72,14 +90,14 @@ describe("a course group", () => {
   // muted — which is why the course is archived rather than hard-deleted.
   it("mutes the heading of an archived course, and only that one", async () => {
     const active = await mount(
-      <CourseGroup group={group({ id: 1, name: "Maths", archived_at: null }, [item()])} />,
+      <CourseGroup group={group({ id: 1, name: "Maths", color: "#22c55e", archived_at: null }, [item()])} />,
     );
     const activeClasses = screen.getByRole("heading", { name: "Maths" }).className;
     active.unmount();
 
     await mount(
       <CourseGroup
-        group={group({ id: 2, name: "Latin", archived_at: "2026-08-01T10:00:00Z" }, [
+        group={group({ id: 2, name: "Latin", color: "#ef4444", archived_at: "2026-08-01T10:00:00Z" }, [
           item({ id: 2, course_id: 2 }),
         ])}
       />,
@@ -88,6 +106,37 @@ describe("a course group", () => {
     const archivedClasses = screen.getByRole("heading", { name: "Latin" }).className;
     expect(archivedClasses).toContain("text-muted-foreground");
     expect(activeClasses).not.toContain("text-muted-foreground");
+  });
+
+  it("shows the course's color as a left border", async () => {
+    await mount(<CourseGroup group={group(COURSE, [item()])} />);
+
+    const section = screen.getByRole("heading", { name: "Maths" }).closest("section");
+    expect(section.style.borderColor).toBe(borderColorFor(COURSE.color));
+  });
+
+  // Only the heading text is muted for an archived course today (see the
+  // test above) — the border must fade the same way rather than the whole
+  // section dimming, which would also mute the still-fully-visible cards.
+  it("fades the border of an archived course without touching card opacity", async () => {
+    await mount(
+      <CourseGroup
+        group={group(
+          { id: 2, name: "Latin", color: "#ef4444", archived_at: "2026-08-01T10:00:00Z" },
+          [item({ id: 2, course_id: 2 })],
+        )}
+      />,
+    );
+
+    const section = screen.getByRole("heading", { name: "Latin" }).closest("section");
+    expect(section.style.borderColor).not.toBe(borderColorFor("#ef4444"));
+    // Two ways this could regress: an inline `opacity` style (jsdom can see
+    // this directly), or a Tailwind utility class like `opacity-50` added to
+    // the section (jsdom applies no stylesheet, so this never shows up in
+    // `style` — it has to be checked in the class list instead, or a
+    // class-based regression here would pass unnoticed).
+    expect(section.style.opacity).toBe("");
+    expect(section.className).not.toMatch(/\bopacity-/);
   });
 });
 
@@ -412,14 +461,17 @@ describe("editing a homework entry", () => {
     expect(screen.getByDisplayValue("avant")).not.toBeNull();
   });
 
-  it("offers the entry's own archived course, muted, and no other archived course", async () => {
+  // A homework entry's own course can already be archived when its edit is
+  // opened — not just archived mid-edit (that path is covered below). Either
+  // way, the picker never offers an archived course.
+  it("does not offer an archived course, including the entry's own", async () => {
     listCourses.mockResolvedValue([
       COURSE,
       { id: 2, name: "Histoire", archived_at: "2026-01-01T00:00:00Z" },
       { id: 3, name: "Latin", archived_at: "2026-01-01T00:00:00Z" },
     ]);
     await mount(
-      <CourseGroup group={group({ id: 2, name: "Histoire", archived_at: "2026-01-01T00:00:00Z" }, [
+      <CourseGroup group={group({ id: 2, name: "Histoire", color: "#f97316", archived_at: "2026-01-01T00:00:00Z" }, [
         item({ course_id: 2 }),
       ])} />,
     );
@@ -427,10 +479,30 @@ describe("editing a homework entry", () => {
 
     fireEvent.click(screen.getByRole("combobox"));
 
-    const histoire = await screen.findByRole("option", { name: "Histoire" });
-    expect(histoire.className).toContain("text-muted-foreground");
-    expect(screen.getByRole("option", { name: "Maths" })).not.toBeNull();
+    expect(screen.queryByRole("option", { name: "Histoire" })).toBeNull();
     expect(screen.queryByRole("option", { name: "Latin" })).toBeNull();
+    expect(screen.getByRole("option", { name: "Maths" })).not.toBeNull();
+  });
+
+  // The student must choose an active course before Save works — the same
+  // "required" error a never-set course shows — when the entry's own course
+  // was already archived before its edit was even opened.
+  it("blocks Save until an active course is chosen, when the entry's own course is already archived", async () => {
+    listCourses.mockResolvedValue([
+      COURSE,
+      { id: 2, name: "Histoire", archived_at: "2026-01-01T00:00:00Z" },
+    ]);
+    await mount(
+      <CourseGroup group={group({ id: 2, name: "Histoire", color: "#f97316", archived_at: "2026-01-01T00:00:00Z" }, [
+        item({ course_id: 2 }),
+      ])} />,
+    );
+    await openEdit();
+
+    fireEvent.click(screen.getByRole("button", { name: en.homework.save }));
+
+    expect(await screen.findByText(en.homework.courseRequired)).not.toBeNull();
+    expect(updateHomework).not.toHaveBeenCalled();
   });
 
   it("round-trips a multi-digit course id", async () => {
@@ -536,6 +608,28 @@ describe("editing a homework entry", () => {
 
     expect(screen.getByDisplayValue("SAVE2")).not.toBeNull();
     expect(screen.getByRole("button", { name: en.homework.save })).not.toBeNull();
+  });
+
+  // The other trigger the "remember the last used course" feature names,
+  // alongside a quick-add save (tested in quick-add-homework.test.jsx):
+  // saving an edit that changed the course records it too.
+  it("records the newly chosen course as last used, once Save lands", async () => {
+    listCourses.mockResolvedValue([COURSE, { id: 2, name: "Histoire", archived_at: null }]);
+    await mount(
+      <>
+        <CourseGroup group={group(COURSE, [item({ text: "avant" })])} />
+        <LastUsedCourseProbe />
+      </>,
+    );
+    expect(screen.getByTestId("last-used-course").textContent).toBe("null");
+    await openEdit();
+
+    fireEvent.click(screen.getByRole("combobox"));
+    fireEvent.click(await screen.findByRole("option", { name: "Histoire" }));
+    fireEvent.click(screen.getByRole("button", { name: en.homework.save }));
+
+    await waitFor(() => expect(updateHomework).toHaveBeenCalled());
+    expect(screen.getByTestId("last-used-course").textContent).toBe("2");
   });
 });
 

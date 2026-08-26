@@ -62,6 +62,9 @@ an empty state explaining that a course is needed first, with a button that open
   the page scrolls — a day block never scrolls on its own
 - The daily view groups entries by course in the same way and with the same component: a course heading, its cards
   underneath, courses in alphabetical order
+- Each course's block — its heading and its cards together — carries a subtle colored left border in the course's own
+  color, in both the daily and weekly views. An archived course's border is faded the same way its heading text
+  already is
 - An area with no homework — an empty day block, or an empty daily view — shows a short muted line rather than nothing
   at all, so that it reads as a deliberately empty day and the place to hover to add something stays obvious
 - In the top we will have a component to select the current day:
@@ -87,6 +90,10 @@ an empty state explaining that a course is needed first, with a button that open
     - the due date is the day the entry is being added to, and it is not editable while creating. Moving an entry to
       another day happens afterwards, through the edit state
     - the course must be chosen before `Save`: it is the only required field. The text may be left empty
+    - the course field pre-selects the course a homework write (quick-add or an edit) last used, in memory only for
+      the running session — never persisted, and gone on the next launch. This is a convenience for entering several
+      entries for the same course in a row, not a remembered preference. Before anything has been used this session,
+      or once the last-used course has since been archived, it falls back to the first active course alphabetically
 - Editing a homework entry:
     - the edit button turns the card itself into an edit state, in place. It is not a modal dialog and the card does
       not move
@@ -114,6 +121,9 @@ It exposes further operations:
   that no longer exists
     - courses are created and renamed from that same list in the drawer. Renaming a course updates every entry at
       once, because an entry references the course and not its name
+    - a course also has a color, picked at random when it is created and changeable afterwards from the same list,
+      through a curated swatch grid plus a hex field for an exact code. A color change writes immediately, with no
+      confirmation, the same as the homework completion checkbox
     - deleting a course always archives it, including a course no homework has ever used. There is deliberately no
       second code path that really removes a row
 - exporting and importing data: we want to ensure backups and restores are possible, and to do that we want to export

@@ -34,6 +34,7 @@ pub fn migrations() -> Vec<Migration> {
 CREATE TABLE courses (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     name        TEXT NOT NULL CHECK (length(trim(name)) > 0),
+    color       TEXT NOT NULL CHECK (color GLOB '#[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]'),
     archived_at TEXT,
     created_at  TEXT NOT NULL
 );

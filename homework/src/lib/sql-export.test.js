@@ -3,8 +3,14 @@ import { generateExport, parseExport, validateExport, SqlImportError } from "@/l
 import { SCHEMA_VERSION } from "@/db/schema";
 
 const COURSES = [
-  { id: 1, name: "Maths", archived_at: null, created_at: "2026-08-01T09:00:00Z" },
-  { id: 2, name: "Latin", archived_at: "2026-08-20T10:00:00Z", created_at: "2026-08-01T09:00:00Z" },
+  { id: 1, name: "Maths", color: "#22c55e", archived_at: null, created_at: "2026-08-01T09:00:00Z" },
+  {
+    id: 2,
+    name: "Latin",
+    color: "#6b7280",
+    archived_at: "2026-08-20T10:00:00Z",
+    created_at: "2026-08-01T09:00:00Z",
+  },
 ];
 
 const HOMEWORK = [
@@ -50,7 +56,7 @@ describe("generateExport / parseExport round trip", () => {
   // value — losing that on a round trip would silently un-archive a course.
   it("keeps NULL distinct from an empty string", () => {
     const text = generateExport(
-      [{ id: 1, name: "Maths", archived_at: null, created_at: "2026-08-01T09:00:00Z" }],
+      [{ id: 1, name: "Maths", color: "#22c55e", archived_at: null, created_at: "2026-08-01T09:00:00Z" }],
       [],
       [],
     );

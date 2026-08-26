@@ -27,8 +27,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useAppData } from "@/components/app-data";
-import { archiveCourse, createCourse, renameCourse } from "@/db/courses";
+import { ColorPicker } from "@/components/color-picker";
+import { archiveCourse, createCourse, renameCourse, setCourseColor } from "@/db/courses";
 import { isActiveCourse, normalizeCourseName, validateCourseName } from "@/lib/courses";
+import {
+  normalizeCourseColor,
+  pickRandomCourseColor,
+  validateCourseColor,
+} from "@/lib/course-colors";
 import { sortCourses } from "@/lib/grouping";
 import { nowInstant } from "@/lib/instants";
 
@@ -51,6 +57,7 @@ export function CourseEditor({ onError = () => {} }) {
 
   const [draft, setDraft] = useState("");
   const [draftProblem, setDraftProblem] = useState(null);
+  const [draftColor, setDraftColor] = useState(() => pickRandomCourseColor());
   const [editingId, setEditingId] = useState(null);
   const [editDraft, setEditDraft] = useState("");
   const [editProblem, setEditProblem] = useState(null);
@@ -68,10 +75,26 @@ export function CourseEditor({ onError = () => {} }) {
       setDraftProblem(problem);
       return;
     }
+    // `ColorPicker` never propagates a malformed hex value upward, so this is
+    // a backstop rather than something a student can actually trigger — the
+    // same relationship `courses_active_name` has to `validateCourseName`.
+    if (validateCourseColor(draftColor) !== null) {
+      return;
+    }
     try {
-      await createCourse(normalizeCourseName(draft), nowInstant());
+      await createCourse(normalizeCourseName(draft), normalizeCourseColor(draftColor), nowInstant());
       setDraft("");
       setDraftProblem(null);
+      setDraftColor(pickRandomCourseColor());
+      await reload();
+    } catch (failure) {
+      onError(failure);
+    }
+  };
+
+  const changeColor = async (id, color) => {
+    try {
+      await setCourseColor(id, color);
       await reload();
     } catch (failure) {
       onError(failure);
@@ -137,7 +160,12 @@ export function CourseEditor({ onError = () => {} }) {
     <div className="flex flex-col gap-3 px-4">
       <h3 className="text-sm font-medium">{t("courses.title")}</h3>
 
-      <form className="flex gap-2" onSubmit={add}>
+      <form className="flex items-center gap-2" onSubmit={add}>
+        <ColorPicker
+          value={draftColor}
+          onChange={setDraftColor}
+          triggerLabel={t("courses.colorPickerNew")}
+        />
         <Input
           value={draft}
           onChange={(event) => {
@@ -216,7 +244,14 @@ export function CourseEditor({ onError = () => {} }) {
             // reasoning `course-group.jsx` uses for homework cards — this
             // never replays for an existing course on an ordinary reload.
             <li key={course.id} className="flex items-center justify-between gap-1 animate-in fade-in duration-200">
-              <span className="truncate text-sm">{course.name}</span>
+              <span className="flex min-w-0 items-center gap-2">
+                <ColorPicker
+                  value={course.color}
+                  onChange={(hex) => changeColor(course.id, hex)}
+                  triggerLabel={t("courses.colorPicker", { name: course.name })}
+                />
+                <span className="truncate text-sm">{course.name}</span>
+              </span>
               <span className="flex shrink-0">
                 <Button
                   variant="ghost"

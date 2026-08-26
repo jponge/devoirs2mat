@@ -14,7 +14,7 @@ import { SCHEMA_VERSION } from "@/db/schema";
 const HEADER_RE = /^-- devoirs2mat schema-version: (\d+)\s*$/;
 
 const COLUMNS = {
-  courses: ["id", "name", "archived_at", "created_at"],
+  courses: ["id", "name", "color", "archived_at", "created_at"],
   homework: ["id", "text", "due_date", "course_id", "done", "created_at"],
   settings: ["key", "value"],
 };

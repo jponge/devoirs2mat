@@ -44,7 +44,7 @@ function NoCourses({ onAddCourse }) {
   return (
     <div className="flex flex-col items-center gap-3 py-16 text-center">
       <h2 className="text-lg font-medium">{t("courses.noneTitle")}</h2>
-      <p className="max-w-sm text-sm text-muted-foreground">{t("courses.noneBody")}</p>
+      <p className="max-w-sm text-sm whitespace-pre-line text-muted-foreground">{t("courses.noneBody")}</p>
       <Button onClick={onAddCourse}>{t("courses.noneAction")}</Button>
     </div>
   );

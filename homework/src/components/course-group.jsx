@@ -201,16 +201,15 @@ export function HomeworkEditForm({
   );
 }
 
-// The options an edit's course picker offers: every active course, plus the
-// entry's own course if it has since been archived — so that saving without
-// touching the course field never forces a change. No other archived course is
-// ever offered. Sorted with `compareCourses` (via `sortCourses`), so an
-// included archived course still lands after the active ones.
-function editCourseOptions(courses, currentCourseId, locale) {
-  const own = courses.find((course) => course.id === currentCourseId);
-  const active = courses.filter(isActiveCourse);
-  const options = own !== undefined && !isActiveCourse(own) ? [...active, own] : active;
-  return sortCourses(options, locale);
+// The options an edit's course picker offers: active courses only, alphabetical.
+// An archived course is never offered, including the entry's own if it has
+// since been archived — reassigning always means picking a course that still
+// exists. If the entry's current `courseId` is not among these options (its
+// own course was already archived, or got archived while the draft stayed
+// open), `validateHomeworkCourseId` catches it at `Save`, the same "required"
+// error a never-chosen course shows.
+function editCourseOptions(courses, locale) {
+  return sortCourses(courses.filter(isActiveCourse), locale);
 }
 
 // Purely presentational in its view state; the writes and the reload they
@@ -232,8 +231,8 @@ function HomeworkCard({ item, courses, locale, onToggle, onSave, onDelete, onErr
   const editSession = useRef(0);
 
   const courseOptions = useMemo(
-    () => editCourseOptions(courses, item.course_id, locale),
-    [courses, item.course_id, locale],
+    () => editCourseOptions(courses, locale),
+    [courses, locale],
   );
 
   const startEdit = () => {
@@ -365,7 +364,7 @@ function HomeworkCard({ item, courses, locale, onToggle, onSave, onDelete, onErr
 
 export function CourseGroup({ group, onError = () => {} }) {
   const { i18n } = useTranslation();
-  const { reload, courses } = useAppData();
+  const { reload, courses, recordCourseUsed } = useAppData();
   const archived = group.course.archived_at !== null && group.course.archived_at !== undefined;
 
   const toggle = async (item, checked) => {
@@ -382,6 +381,7 @@ export function CourseGroup({ group, onError = () => {} }) {
   const saveEdit = async (id, draft) => {
     try {
       await updateHomework(id, { text: draft.text, dueDate: draft.dueDate, courseId: draft.courseId });
+      recordCourseUsed(draft.courseId);
       await reload();
       return true;
     } catch (failure) {
@@ -400,7 +400,20 @@ export function CourseGroup({ group, onError = () => {} }) {
   };
 
   return (
-    <section className="flex flex-col gap-2">
+    <section
+      className="flex flex-col gap-2 border-l-2 pl-3"
+      // A left border in the course's own color, thin enough (2px) to stay
+      // subtle regardless of how saturated the picked color is. Archived
+      // fades only the border's own color via `color-mix`, the same
+      // dimming an archived heading already gets — `opacity` on the whole
+      // section would also fade the still-fully-visible cards underneath,
+      // which is not how archiving works today (see the heading below).
+      style={{
+        borderColor: archived
+          ? `color-mix(in oklch, ${group.course.color} 50%, transparent)`
+          : group.course.color,
+      }}
+    >
       {/* An entry on a deleted course keeps displaying the real course name,
           muted. The course is archived, never hard-deleted, precisely so this
           name still exists. */}

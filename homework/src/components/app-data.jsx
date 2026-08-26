@@ -52,6 +52,11 @@ export function AppDataProvider({
   const [view, setViewState] = useState(initialView);
   const [courses, setCourses] = useState([]);
   const [homework, setHomework] = useState([]);
+  // The course id a homework write (quick-add or an in-place edit) last used,
+  // in memory only — never persisted, and gone on the next launch. Lets
+  // quick-add default to it instead of the alphabetically-first course, since
+  // a student typically enters several entries for the same course in a row.
+  const [lastUsedCourseId, setLastUsedCourseId] = useState(null);
   const [loading, setLoading] = useState(true);
   // Sticky, unlike `loading`: true once the first read has settled, and never
   // false again. `loading` returns to true on every refetch, so a view that used
@@ -127,6 +132,10 @@ export function AppDataProvider({
     setReloadCount((count) => count + 1);
   }, []);
 
+  const recordCourseUsed = useCallback((courseId) => {
+    setLastUsedCourseId(courseId);
+  }, []);
+
   // Radix lets a single-type toggle group deselect its active item, which
   // arrives as an empty string. Storing that would render neither view, so an
   // unknown value is ignored rather than believed.
@@ -175,8 +184,28 @@ export function AppDataProvider({
       goPrevious,
       goNext,
       reload,
+      lastUsedCourseId,
+      recordCourseUsed,
     }),
-    [selectedDate, view, from, to, courses, homework, loading, loaded, error, errorCount, setView, selectDate, goPrevious, goNext, reload],
+    [
+      selectedDate,
+      view,
+      from,
+      to,
+      courses,
+      homework,
+      loading,
+      loaded,
+      error,
+      errorCount,
+      setView,
+      selectDate,
+      goPrevious,
+      goNext,
+      reload,
+      lastUsedCourseId,
+      recordCourseUsed,
+    ],
   );
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;

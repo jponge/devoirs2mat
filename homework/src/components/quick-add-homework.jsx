@@ -18,15 +18,26 @@ import { nowInstant } from "@/lib/instants";
 
 export function QuickAddHomework({ dueDate, onError = () => {} }) {
   const { t, i18n } = useTranslation();
-  const { courses, reload } = useAppData();
+  const { courses, reload, lastUsedCourseId, recordCourseUsed } = useAppData();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(null);
   const [error, setError] = useState(null);
 
-  // Active courses only, alphabetical — the draft's course pre-selects the
-  // first of these so `Save` works even if the student never touches the
-  // field, per the decision recorded in this milestone's plan.
+  // Active courses only, alphabetical — the draft's course pre-selects one of
+  // these so `Save` works even if the student never touches the field, per
+  // the decision recorded in this milestone's plan.
   const activeCourses = sortCourses(courses.filter(isActiveCourse), i18n.language);
+
+  // Prefers the course a save (here or an in-place edit) last used this
+  // session, so entering several entries for the same course in a row does
+  // not require re-picking it each time. Falls back to the first active
+  // course alphabetically when nothing has been used yet, or when the last
+  // used one has since been archived.
+  const defaultCourseId = () => {
+    const usable =
+      lastUsedCourseId !== null && activeCourses.some((course) => course.id === lastUsedCourseId);
+    return usable ? lastUsedCourseId : activeCourses[0].id;
+  };
 
   // Defensive: the whole main view is already gated on at least one course
   // existing (`App.jsx`'s first-run state), so this should never actually be
@@ -37,7 +48,7 @@ export function QuickAddHomework({ dueDate, onError = () => {} }) {
   }
 
   const start = () => {
-    setDraft({ text: "", courseId: activeCourses[0].id });
+    setDraft({ text: "", courseId: defaultCourseId() });
     setError(null);
     setOpen(true);
   };
@@ -61,6 +72,7 @@ export function QuickAddHomework({ dueDate, onError = () => {} }) {
         courseId: draft.courseId,
         createdAt: nowInstant(),
       });
+      recordCourseUsed(draft.courseId);
       await reload();
       setOpen(false);
       setDraft(null);

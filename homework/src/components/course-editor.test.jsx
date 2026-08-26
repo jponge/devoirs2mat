@@ -2,34 +2,76 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { AppDataProvider } from "@/components/app-data";
 import { CourseEditor } from "@/components/course-editor";
+import { COURSE_COLORS } from "@/lib/course-colors";
 import { nowInstant } from "@/lib/instants";
 import i18n from "@/i18n";
 import en from "@/i18n/en.json";
 import fr from "@/i18n/fr.json";
 
-const { listCourses, createCourse, renameCourse, archiveCourse, listHomeworkBetween } = vi.hoisted(
-  () => ({
+const { listCourses, createCourse, renameCourse, setCourseColor, archiveCourse, listHomeworkBetween } =
+  vi.hoisted(() => ({
     listCourses: vi.fn(),
     createCourse: vi.fn(),
     renameCourse: vi.fn(),
+    setCourseColor: vi.fn(),
     archiveCourse: vi.fn(),
     listHomeworkBetween: vi.fn(),
-  }),
-);
+  }));
+const { pickRandomCourseColor } = vi.hoisted(() => ({ pickRandomCourseColor: vi.fn() }));
 
-vi.mock("@/db/courses", () => ({ listCourses, createCourse, renameCourse, archiveCourse }));
+vi.mock("@/db/courses", () => ({
+  listCourses,
+  createCourse,
+  renameCourse,
+  setCourseColor,
+  archiveCourse,
+}));
 vi.mock("@/db/homework", () => ({ listHomeworkBetween }));
+vi.mock("@/lib/course-colors", async (importOriginal) => ({
+  ...(await importOriginal()),
+  pickRandomCourseColor,
+}));
 
-const MATHS = { id: 1, name: "Mathématiques", archived_at: null, created_at: "2026-08-01T08:00:00Z" };
-const ZOO = { id: 2, name: "Zoologie", archived_at: null, created_at: "2026-08-02T08:00:00Z" };
-const GONE = { id: 3, name: "Latin", archived_at: "2026-08-03T08:00:00Z", created_at: "2026-08-01T08:00:00Z" };
+// Arbitrary stand-ins for whatever `pickRandomCourseColor` returns — kept
+// distinct from any real palette hex so a test asserting on one of these never
+// coincidentally passes because it happens to match a real swatch.
+const RANDOM_1 = "#111111";
+const RANDOM_2 = "#222222";
+
+const paletteHex = (key) => COURSE_COLORS.find((color) => color.key === key).hex;
+const AMBER_HEX = paletteHex("amber");
+const BLUE_HEX = paletteHex("blue");
+
+const MATHS = {
+  id: 1,
+  name: "Mathématiques",
+  color: "#22c55e",
+  archived_at: null,
+  created_at: "2026-08-01T08:00:00Z",
+};
+const ZOO = {
+  id: 2,
+  name: "Zoologie",
+  color: "#f97316",
+  archived_at: null,
+  created_at: "2026-08-02T08:00:00Z",
+};
+const GONE = {
+  id: 3,
+  name: "Latin",
+  color: "#6b7280",
+  archived_at: "2026-08-03T08:00:00Z",
+  created_at: "2026-08-01T08:00:00Z",
+};
 
 beforeEach(async () => {
   listCourses.mockResolvedValue([MATHS, ZOO]);
   listHomeworkBetween.mockResolvedValue([]);
   createCourse.mockResolvedValue(9);
   renameCourse.mockResolvedValue(undefined);
+  setCourseColor.mockResolvedValue(undefined);
   archiveCourse.mockResolvedValue(undefined);
+  pickRandomCourseColor.mockReturnValueOnce(RANDOM_1).mockReturnValue(RANDOM_2);
   await i18n.changeLanguage("en");
 });
 
@@ -87,7 +129,13 @@ describe("the course list", () => {
   it("orders names with localeCompare, not by bytes", async () => {
     listCourses.mockResolvedValue([
       ZOO,
-      { id: 4, name: "Éducation physique", archived_at: null, created_at: "2026-08-01T08:00:00Z" },
+      {
+        id: 4,
+        name: "Éducation physique",
+        color: "#8b5cf6",
+        archived_at: null,
+        created_at: "2026-08-01T08:00:00Z",
+      },
     ]);
 
     await mount();
@@ -108,8 +156,9 @@ describe("adding a course", () => {
     fireEvent.click(screen.getByRole("button", { name: en.courses.add }));
 
     await waitFor(() => expect(createCourse).toHaveBeenCalledTimes(1));
-    const [name, instant] = createCourse.mock.calls[0];
+    const [name, color, instant] = createCourse.mock.calls[0];
     expect(name).toBe("Histoire");
+    expect(color).toBe(RANDOM_1);
     expectWrittenNow(instant, startedAt, nowInstant());
     // Nothing observes the database: the editor has to ask for the reload.
     await waitFor(() => expect(listCourses.mock.calls.length).toBeGreaterThan(before));
@@ -171,6 +220,96 @@ describe("adding a course", () => {
 
     await waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+});
+
+describe("the add row's color", () => {
+  it("shows a random default color on mount", async () => {
+    await mount();
+
+    const trigger = screen.getByRole("button", { name: en.courses.colorPickerNew });
+    expect(trigger.style.backgroundColor).toBeTruthy();
+  });
+
+  it("saves the draft's color alongside the name", async () => {
+    await mount();
+
+    fireEvent.change(nameField(), { target: { value: "Histoire" } });
+    fireEvent.click(screen.getByRole("button", { name: en.courses.add }));
+
+    await waitFor(() => expect(createCourse).toHaveBeenCalledTimes(1));
+    expect(createCourse.mock.calls[0][1]).toBe(RANDOM_1);
+  });
+
+  // "so the row is never offering the color that was just used" — the draft
+  // gets a fresh call to pickRandomCourseColor() rather than keeping the one
+  // that was just saved.
+  it("re-seeds with a fresh random color after a successful add", async () => {
+    await mount();
+
+    fireEvent.change(nameField(), { target: { value: "Histoire" } });
+    fireEvent.click(screen.getByRole("button", { name: en.courses.add }));
+
+    await waitFor(() => expect(pickRandomCourseColor).toHaveBeenCalledTimes(2));
+    await waitFor(() => {
+      const trigger = screen.getByRole("button", { name: en.courses.colorPickerNew });
+      expect(trigger.style.backgroundColor).toBeTruthy();
+    });
+  });
+
+  it("lets the swatch grid override the random default", async () => {
+    await mount();
+    fireEvent.click(screen.getByRole("button", { name: en.courses.colorPickerNew }));
+    fireEvent.click(await screen.findByRole("button", { name: en.colors.amber }));
+
+    fireEvent.change(nameField(), { target: { value: "Histoire" } });
+    fireEvent.click(screen.getByRole("button", { name: en.courses.add }));
+
+    await waitFor(() => expect(createCourse).toHaveBeenCalledTimes(1));
+    expect(createCourse.mock.calls[0][1]).toBe(AMBER_HEX);
+  });
+});
+
+describe("changing a course's color", () => {
+  const trigger = (name) =>
+    screen.getByRole("button", { name: en.courses.colorPicker.replace("{{name}}", name) });
+
+  it("shows each active course's current color", async () => {
+    await mount();
+
+    expect(trigger(ZOO.name).style.backgroundColor).toBeTruthy();
+  });
+
+  it("writes immediately through the swatch grid, then reloads", async () => {
+    await mount();
+    const before = listCourses.mock.calls.length;
+
+    fireEvent.click(trigger(ZOO.name));
+    fireEvent.click(await screen.findByRole("button", { name: en.colors.blue }));
+
+    await waitFor(() => expect(setCourseColor).toHaveBeenCalledWith(ZOO.id, BLUE_HEX));
+    await waitFor(() => expect(listCourses.mock.calls.length).toBeGreaterThan(before));
+  });
+
+  it("writes immediately through the hex field", async () => {
+    await mount();
+
+    fireEvent.click(trigger(ZOO.name));
+    const field = await screen.findByLabelText(en.courses.colorHexPlaceholder);
+    fireEvent.change(field, { target: { value: "#123abc" } });
+
+    await waitFor(() => expect(setCourseColor).toHaveBeenCalledWith(ZOO.id, "#123abc"));
+  });
+
+  it("reports a failed write to its caller", async () => {
+    const onError = vi.fn();
+    setCourseColor.mockRejectedValue(new Error("database is locked"));
+    await mount({ onError });
+
+    fireEvent.click(trigger(ZOO.name));
+    fireEvent.click(await screen.findByRole("button", { name: en.colors.blue }));
+
+    await waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
   });
 });
 

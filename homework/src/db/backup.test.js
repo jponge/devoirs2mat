@@ -42,6 +42,12 @@ describe("exportDatabase", () => {
     expect(lastSql(select)).not.toMatch(/_sqlx_migrations/);
   });
 
+  it("selects each course's color", async () => {
+    await exportDatabase();
+
+    expect(lastSql(select)).toMatch(/'color',\s*color/i);
+  });
+
   it("returns the header and no statements for a completely empty database", async () => {
     const text = await exportDatabase();
 
@@ -49,7 +55,9 @@ describe("exportDatabase", () => {
   });
 
   it("regenerates the export text from the tables the single select returns", async () => {
-    const courses = [{ id: 1, name: "Maths", archived_at: null, created_at: "2026-08-01T09:00:00Z" }];
+    const courses = [
+      { id: 1, name: "Maths", color: "#22c55e", archived_at: null, created_at: "2026-08-01T09:00:00Z" },
+    ];
     const homework = [
       {
         id: 1,
@@ -71,7 +79,7 @@ describe("exportDatabase", () => {
 
 describe("importDatabase", () => {
   const validText = generateExport(
-    [{ id: 1, name: "Maths", archived_at: null, created_at: "2026-08-01T09:00:00Z" }],
+    [{ id: 1, name: "Maths", color: "#22c55e", archived_at: null, created_at: "2026-08-01T09:00:00Z" }],
     [
       {
         id: 1,

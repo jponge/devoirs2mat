@@ -165,6 +165,59 @@ describe("saving a draft", () => {
   });
 });
 
+describe("remembering the last used course", () => {
+  it("pre-selects the course used in the previous save, not the alphabetically-first one", async () => {
+    await mount();
+    openDraft();
+    fireEvent.click(screen.getByRole("combobox"));
+    fireEvent.click(await screen.findByRole("option", { name: "Zoologie" }));
+    fireEvent.click(screen.getByRole("button", { name: en.homework.save }));
+    await waitFor(() => expect(createHomework).toHaveBeenCalled());
+
+    openDraft();
+
+    expect(screen.getByRole("combobox").textContent).toBe("Zoologie");
+  });
+
+  it("shares the last used course across separate quick-add instances", async () => {
+    render(
+      <AppDataProvider today="2026-08-25">
+        <QuickAddHomework dueDate="2026-08-25" onError={() => {}} />
+        <QuickAddHomework dueDate="2026-08-26" onError={() => {}} />
+      </AppDataProvider>,
+    );
+    await waitFor(() => expect(listHomeworkBetween).toHaveBeenCalled());
+    const [firstAdd, secondAdd] = screen.getAllByRole("button", { name: en.homework.add });
+
+    fireEvent.click(firstAdd);
+    fireEvent.click(screen.getByRole("combobox"));
+    fireEvent.click(await screen.findByRole("option", { name: "Zoologie" }));
+    fireEvent.click(screen.getByRole("button", { name: en.homework.save }));
+    await waitFor(() => expect(createHomework).toHaveBeenCalled());
+
+    fireEvent.click(secondAdd);
+
+    expect(screen.getByRole("combobox").textContent).toBe("Zoologie");
+  });
+
+  it("falls back to the alphabetically-first course once the last used one has been archived", async () => {
+    await mountWithReload();
+    openDraft();
+    fireEvent.click(screen.getByRole("combobox"));
+    fireEvent.click(await screen.findByRole("option", { name: "Zoologie" }));
+    fireEvent.click(screen.getByRole("button", { name: en.homework.save }));
+    await waitFor(() => expect(createHomework).toHaveBeenCalled());
+
+    listCourses.mockResolvedValue([MATHS, { ...ZOOLOGIE, archived_at: "2026-08-26T00:00:00Z" }]);
+    fireEvent.click(screen.getByRole("button", { name: "reload" }));
+    await waitFor(() => expect(listCourses.mock.calls.length).toBeGreaterThan(1));
+
+    openDraft();
+
+    expect(screen.getByRole("combobox").textContent).toBe("Maths");
+  });
+});
+
 describe("discarding a draft", () => {
   it("Cancel discards the draft with no write", async () => {
     await mount();
