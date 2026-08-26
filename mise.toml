@@ -2,3 +2,7 @@
 node = "latest"
 pnpm = "latest"
 rust = "latest"
+# Cross-compiling to Windows (`scripts/build-windows.sh`) via cargo-xwin. Installed
+# through Mise's `cargo:` backend rather than a bare `cargo install`, so it stays a
+# tracked, versioned Mise tool like everything else here.
+"cargo:cargo-xwin" = "latest"

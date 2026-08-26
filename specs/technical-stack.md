@@ -426,6 +426,113 @@ Added by milestone 10, at the versions resolved on 2026-08-26: `tauri-plugin-dia
   any pre-configured accessible paths." A static scope naming a fixed directory would be the wrong tool here — the
   student can save or open the file anywhere
 
+## Distribution
+
+There is no CI and no public release process — this is one family's application, and distribution means producing
+one installer per platform from this Mac and handing it over. `homework/scripts/provision.sh` sets up the
+toolchain (idempotent, safe to re-run); `build-macos.sh`, `build-windows.sh` and `build-linux.sh` each produce one
+installer. Every script passes `--bundles <format>` to `tauri build` rather than changing `tauri.conf.json`'s
+`bundle.targets` (which stays `"all"`, the honest default for a bare `pnpm tauri build`) — the scripts are what
+curate that down to a single obvious artifact per platform:
+
+| Platform | Built how | Artifact |
+|---|---|---|
+| macOS | Natively, already on macOS | `.dmg` |
+| Windows | Cross-compiled via `cargo-xwin` | NSIS `.exe` |
+| Linux | Natively, inside a Podman container running Ubuntu | AppImage |
+
+None of this needed an application code change: `tauri.conf.json` already had `bundle.targets: "all"`, every
+platform's icon already existed (`icon.icns`, `icon.ico`, the PNGs), and `main.rs` already carried the
+Windows-specific `windows_subsystem = "windows"` attribute suppressing a console window in release builds. Every
+finding below was hit by actually running each script to a working artifact, not anticipated in advance — this
+list is what made the difference between "should work" and does.
+
+### Windows
+
+Cross-compiles rather than needing a Windows machine, because `cargo-xwin` only needs the Windows SDK/CRT headers,
+which it downloads itself (about a gigabyte the first time, cached after). `mise.toml` installs it through Mise's
+`cargo:` backend (`"cargo:cargo-xwin" = "latest"`) rather than a bare `cargo install`, so it stays a tracked,
+versioned Mise tool like `node`/`pnpm`/`rust`. WebView2 is left on Tauri's default "download at install" behaviour
+rather than bundled offline — it ships with Windows 11 and most updated Windows 10 machines already.
+
+Three things Mise doesn't cover, each added to `provision.sh` with a comment explaining why it isn't Mise-managed:
+
+- The `x86_64-pc-windows-msvc` Rust target itself — not expressible in `mise.toml`; added with an explicit
+  `rustup target add`, run through `mise exec --` so it finds the right `rustup` even outside an activated shell.
+- **LLVM, via Homebrew (`brew install llvm`).** Xcode's bundled `clang`/`lld` doesn't include the full LLVM
+  binutils suite cargo-xwin needs to cross-link a Windows binary — specifically `llvm-lib`, the archiver. Homebrew
+  keeps it off `PATH` by default (it would conflict with Xcode's own clang), so `build-windows.sh` adds its `bin`
+  directory to `PATH` itself, scoped to just that build.
+- **`makensis`, via Homebrew (`brew install makensis`).** Tauri's NSIS bundler shells out to it to produce the
+  actual installer; not bundled by Tauri itself, expected to already be on `PATH`.
+
+**The harder one: this Mac's case-sensitive APFS.** The Windows SDK headers `cargo-xwin` downloads reference each
+other with inconsistent case — `sqlite3.c` (SQLite's vendored source, compiled from scratch since `sqlx-sqlite`
+bundles it) includes `"windows.h"`, the SDK ships `Windows.h`; that header includes `"DriverSpecs.h"`, the SDK
+ships `driverspecs.h`; and so on, in both directions, with no reason to believe that list is exhaustive. Harmless
+on Windows' own case-insensitive filesystem, fatal here — confirmed by patching individual headers one at a time
+until it was clear the mismatch was systematic, not a couple of one-offs. The general fix, in `build-windows.sh`:
+mount a small case-insensitive APFS disk image (`hdiutil create -fs APFS -type SPARSE`, plain `"APFS"`, not
+`"Case-sensitive APFS"` — that's the *case-sensitive* one) at `~/Library/Caches/cargo-xwin`, cargo-xwin's own cache
+location, so every header resolves regardless of which case anything references it with. Created once, mounted on
+every run thereafter (`mount | grep` checks first).
+
+### Linux
+
+Cannot cross-compile the way Windows does: it links against `webkit2gtk`/GTK system libraries, which means
+genuinely needing a matching Linux userspace, not just headers. `build-linux.sh` builds
+`linux-build.Containerfile` (an Ubuntu 24.04 image with Tauri's documented Linux prerequisites, plus `xdg-utils` —
+not on that documented list, but the AppImage bundler checks for `xdg-open` at bundle time regardless) with
+Podman — chosen over Docker since that's what this machine already has; the two are CLI-compatible for this
+(`podman build`/`podman run` mirror `docker build`/`docker run`). The container installs Mise too and runs `mise
+install` against this repo's own `mise.toml` before building, so the Linux build uses the identical
+node/pnpm/rust versions as the macOS and Windows ones, not whatever `apt` happens to package.
+
+**Podman on macOS needs a running Linux VM ("podman machine"), not just the `podman` binary.** `provision.sh`
+creates and starts one if none is running. Its default memory (2GiB) OOM-kills partway through this app's
+GTK/webkit2gtk bindings compiling in release mode — found by watching a build die mid-`rustc` with no more specific
+error than `signal: 9, SIGKILL`. `provision.sh` creates it with `--memory 8192` instead.
+
+**The AppImage bundler (`linuxdeploy`) is itself distributed as an AppImage**, which normally mounts itself via
+FUSE — not available in an ordinary container. `build-linux.sh` sets `APPIMAGE_EXTRACT_AND_RUN=1`, which tells it
+to extract and run directly instead.
+
+**Build output lives in a named Podman volume, not the bind-mounted repository.** The whole repository is still
+bind-mounted at `/workspace` for the *source* (mise.toml lives at the repo root, and Mise's config discovery walks
+up parent directories to find it, the same reason a bare `pnpm`/`cargo` already works from `homework/` locally
+with no `mise.toml` of its own there) — but `CARGO_TARGET_DIR` points at a separate named volume
+(`devoirs2mat-linux-target`), native to the Linux VM's own filesystem. Found the hard way: the AppImage bundler
+copies and re-permissions a few hundred shared libraries into place near the end of the build, and that specific
+pattern of file operations fails with "Permission denied" when the destination is the bind-mounted path — a
+virtiofs quirk (bind mounts on macOS are proxied through a network filesystem protocol into the Linux VM), not a
+real permission problem, since the very same build writes thousands of ordinary object files there just fine
+during compilation. `build-linux.sh` retrieves just the final artifact afterward with `podman cp`.
+
+**That volume needs cleaning between runs, and not from inside a container.** The bundler doesn't reliably re-run
+against its own previous output still sitting there — a second consecutive run failed with a plain "Permission
+denied" partway through bundling. Worse: rootless Podman's per-container user-namespace mapping isn't guaranteed
+stable enough across separate `podman run` invocations for a plain `rm -rf` from inside a *fresh* container to
+reliably delete files an *earlier* container wrote — confirmed by watching exactly that `rm -rf` fail with
+"Permission denied" on the very directories it was trying to remove. `podman unshare` is the normal fix for this
+class of problem but isn't available talking to a remote machine, which macOS Podman always is (only Linux runs
+Podman natively). `build-linux.sh` instead runs `podman machine ssh -- sudo rm -rf <volume mountpoint>/release/bundle`
+before each build — real root inside the VM bypasses the user-namespace mapping question entirely.
+`deps/`/`incremental/`, the expensive part to rebuild, live in a sibling directory and are untouched.
+
+**The produced AppImage is `aarch64` (ARM64), not `x86_64`** — Podman's Linux VM runs natively on this Apple
+Silicon Mac's own architecture, and the build is native inside it, not cross-compiled. Most physical Linux desktop
+and laptop hardware is `x86_64`; this AppImage will not run there. Producing an `x86_64` build would mean either
+QEMU-emulated compilation inside the container (slow — full CPU emulation for a Rust release build) or a separate
+`x86_64` Podman machine. Not done as part of this change; worth a decision before treating a Linux build as
+actually deployable to a typical machine, the way the Windows one already is to a specific one.
+
+### All three
+
+Every `pnpm install` in every build script runs with `CI=true`. Switching between `build-macos.sh` and
+`build-linux.sh` leaves `node_modules` holding the other platform's native binaries (`esbuild` and similar);
+without it, pnpm refuses to reinstall over that without an interactive confirmation, which a script has no
+terminal to give.
+
 ## Code layout under `homework/src`
 
 - `components/ui/` — shadcn components, generated, not hand-edited
