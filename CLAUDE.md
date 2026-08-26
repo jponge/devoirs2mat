@@ -69,8 +69,7 @@ changed, `cargo check` passes if you touched Rust, and you have stated plainly w
   anything semantic: `search_symbol`, `rename_refactoring`, `get_file_problems`, `reformat_file`. If a call fails or
   the tools are not connected, fall back to the regular file tools without retrying — plain text search may always use
   Grep directly
-- Do not touch `pnpm-lock.yaml` (change dependencies through `pnpm` only), `homework/src-tauri/icons/`, or anything
-  under `.idea/`
+- Do not touch `pnpm-lock.yaml` (change dependencies through `pnpm` only), or anything under `.idea/`
 - Before asking me to review a *completed* task or plan step — not after each individual edit, and not for typo,
   formatting or one-line changes — launch review subagents in parallel: **three** (architecture, quality-engineering,
   adversarial) when the change touches user-visible behaviour, persistence or a public contract; **one**
