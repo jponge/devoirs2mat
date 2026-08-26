@@ -19,6 +19,9 @@ function DayBlock({ day, language, onError }) {
   const { t } = useTranslation();
 
   return (
+    // No `key` here — it's set by the caller, on the element, the same way
+    // `daily-view.jsx` keys its section on the date so the fade-in below
+    // retriggers on navigation instead of only ever playing once.
     <section
       data-testid="day-block"
       className="group flex animate-in flex-col gap-3 rounded-lg border p-4 fade-in duration-300"
@@ -49,16 +52,16 @@ export function WeeklyView({ onError }) {
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-      <DayBlock day={monday} language={i18n.language} onError={onError} />
-      <DayBlock day={tuesday} language={i18n.language} onError={onError} />
-      <DayBlock day={wednesday} language={i18n.language} onError={onError} />
-      <DayBlock day={thursday} language={i18n.language} onError={onError} />
-      <DayBlock day={friday} language={i18n.language} onError={onError} />
+      <DayBlock key={monday.date} day={monday} language={i18n.language} onError={onError} />
+      <DayBlock key={tuesday.date} day={tuesday} language={i18n.language} onError={onError} />
+      <DayBlock key={wednesday.date} day={wednesday} language={i18n.language} onError={onError} />
+      <DayBlock key={thursday.date} day={thursday} language={i18n.language} onError={onError} />
+      <DayBlock key={friday.date} day={friday} language={i18n.language} onError={onError} />
       {/* The empty right-hand cell that keeps the weekend paired on the row
           below. It carries no content and is not announced. */}
       <div aria-hidden="true" />
-      <DayBlock day={saturday} language={i18n.language} onError={onError} />
-      <DayBlock day={sunday} language={i18n.language} onError={onError} />
+      <DayBlock key={saturday.date} day={saturday} language={i18n.language} onError={onError} />
+      <DayBlock key={sunday.date} day={sunday} language={i18n.language} onError={onError} />
     </div>
   );
 }

@@ -118,7 +118,9 @@ export function HomeworkEditForm({
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-2" onKeyDown={onKeyDown}>
+    // Fresh children each time this mounts — entering edit (in-place or
+    // quick-add) — so the fade-in actually plays instead of only firing once.
+    <div className="flex flex-1 flex-col gap-2 animate-in fade-in duration-150" onKeyDown={onKeyDown}>
       <Textarea
         value={text}
         onChange={(event) => onTextChange(event.target.value)}
@@ -407,7 +409,12 @@ export function CourseGroup({ group, onError = () => {} }) {
       </h3>
       <ul className="flex flex-col gap-2">
         {group.homework.map((item) => (
-          <li key={item.id} data-testid="homework-item">
+          // `item.id` only changes for a genuinely new row (quick-add, or an
+          // import that assigns fresh ids), so this only ever plays for a
+          // card that is actually new — an existing card reusing its key
+          // never remounts, so it never replays the animation on an ordinary
+          // reload.
+          <li key={item.id} data-testid="homework-item" className="animate-in fade-in duration-200">
             <HomeworkCard
               item={item}
               courses={courses}

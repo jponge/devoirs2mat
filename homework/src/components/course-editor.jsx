@@ -163,8 +163,17 @@ export function CourseEditor({ onError = () => {} }) {
 
       <ul className="flex flex-col gap-1">
         {active.map((course) =>
+          // Both branches share the same key, so switching a row into and out
+          // of rename never remounts it — the same `<li>` just gets different
+          // children. Both branches therefore carry the *same* `animate-in`
+          // class rather than just one: a class that toggles on an existing
+          // node restarts the CSS animation just as a remount would, so
+          // giving only the non-editing branch the class replayed the fade-in
+          // every time a rename was committed or cancelled — a bug caught by
+          // review, not something a test could see, since jsdom doesn't run
+          // CSS animations.
           course.id === editingId ? (
-            <li key={course.id} className="flex flex-col gap-1">
+            <li key={course.id} className="flex flex-col gap-1 animate-in fade-in duration-200">
               <div className="flex items-center gap-1">
                 <Input
                   autoFocus
@@ -203,7 +212,10 @@ export function CourseEditor({ onError = () => {} }) {
               ) : null}
             </li>
           ) : (
-            <li key={course.id} className="flex items-center justify-between gap-1">
+            // `course.id` only changes for a genuinely new row, the same
+            // reasoning `course-group.jsx` uses for homework cards — this
+            // never replays for an existing course on an ordinary reload.
+            <li key={course.id} className="flex items-center justify-between gap-1 animate-in fade-in duration-200">
               <span className="truncate text-sm">{course.name}</span>
               <span className="flex shrink-0">
                 <Button

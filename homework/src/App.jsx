@@ -112,7 +112,10 @@ function App({ startupError = null }) {
     report(startupError, t("errors.startupFailed"));
   }, [startupError, report, t]);
 
-  const reportWriteFailure = useCallback(
+  // The language switch's own message: naming what failed is more useful than
+  // the generic one below, and it has exactly one caller, so there is no risk
+  // of it leaking onto an unrelated failure.
+  const reportLanguageFailure = useCallback(
     (failure) => {
       toast.error(t("errors.languageFailed"));
       console.error("a write failed", failure);
@@ -120,12 +123,11 @@ function App({ startupError = null }) {
     [t],
   );
 
-  // Deliberately its own function rather than a reuse of `reportWriteFailure`:
-  // that one is hardcoded to `errors.languageFailed` for its two existing
-  // callers (the language switch and the course editor), and reusing it here
-  // would show the wrong message for a failed homework write or a failed link
-  // open. Pre-existing mismatch, not something this milestone fixes.
-  const reportHomeworkFailure = useCallback(
+  // The generic write-failure reporter: homework saves and deletes, a link
+  // that would not open, and course create/rename/archive all funnel through
+  // here, since none of those has copy specific enough to be worth its own
+  // message the way the language switch does.
+  const reportWriteFailure = useCallback(
     (failure, kind) => {
       toast.error(t(kind === "link" ? "errors.linkFailed" : "errors.saveFailed"));
       console.error("a write failed", failure);
@@ -148,12 +150,13 @@ function App({ startupError = null }) {
     <AppDataProvider>
       <div className="flex min-h-svh flex-col">
         <TopBar
-          onError={reportWriteFailure}
+          onLanguageError={reportLanguageFailure}
+          onCourseError={reportWriteFailure}
           onBackupError={reportBackupFailure}
           panelOpen={panelOpen}
           onPanelOpenChange={setPanelOpen}
         />
-        <MainView onAddCourse={() => setPanelOpen(true)} onHomeworkError={reportHomeworkFailure} />
+        <MainView onAddCourse={() => setPanelOpen(true)} onHomeworkError={reportWriteFailure} />
       </div>
       <Toaster containerAriaLabel={t("topBar.notifications")} />
     </AppDataProvider>

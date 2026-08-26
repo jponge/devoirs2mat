@@ -20,7 +20,11 @@ export function DailyView({ onError }) {
   );
 
   return (
-    <section className="group flex animate-in flex-col gap-4 fade-in duration-300">
+    // Keyed on the date so navigating to a different day remounts the section
+    // and the fade-in below actually retriggers — without a key, React reuses
+    // the same DOM node across days and the animation would only ever play
+    // once, on the app's first render.
+    <section key={selectedDate} className="group flex animate-in flex-col gap-4 fade-in duration-300">
       {groups.length === 0 ? (
         <EmptyLine>{t("homework.empty")}</EmptyLine>
       ) : (

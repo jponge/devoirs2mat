@@ -8,6 +8,7 @@ import fr from "@/i18n/fr.json";
 
 const {
   listCourses,
+  createCourse,
   listHomeworkBetween,
   setHomeworkDone,
   createHomework,
@@ -15,6 +16,7 @@ const {
   deleteHomework,
 } = vi.hoisted(() => ({
   listCourses: vi.fn(),
+  createCourse: vi.fn(),
   listHomeworkBetween: vi.fn(),
   setHomeworkDone: vi.fn(),
   createHomework: vi.fn(),
@@ -35,7 +37,7 @@ const { writeTextFile, readTextFile } = vi.hoisted(() => ({
   readTextFile: vi.fn(),
 }));
 
-vi.mock("@/db/courses", () => ({ listCourses }));
+vi.mock("@/db/courses", () => ({ listCourses, createCourse }));
 vi.mock("@/db/homework", () => ({
   listHomeworkBetween,
   setHomeworkDone,
@@ -57,6 +59,7 @@ beforeEach(async () => {
   listCourses.mockResolvedValue([{ id: 1, name: "Maths", archived_at: null }]);
   listHomeworkBetween.mockResolvedValue([]);
   setHomeworkDone.mockResolvedValue(undefined);
+  createCourse.mockResolvedValue(2);
   createHomework.mockResolvedValue(2);
   updateHomework.mockResolvedValue(undefined);
   deleteHomework.mockResolvedValue(undefined);
@@ -574,6 +577,26 @@ describe("the course editor in the panel", () => {
     fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
 
     await waitFor(() => expect(screen.queryByText(en.courses.title)).toBeNull());
+  });
+
+  // A failed course write used to share the language switch's callback and
+  // toast "Couldn't save the language." — wrong, and never caught because
+  // nothing exercised a course-write failure through the full app. It must
+  // get the generic write-failure message instead.
+  it("toasts the generic write failure, not the language one, when a course write fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    createCourse.mockRejectedValue(new Error("database is locked"));
+    await mount();
+    openPanel();
+    await waitFor(() => expect(screen.getByText(en.courses.title)).not.toBeNull());
+    fireEvent.change(screen.getByLabelText(en.courses.namePlaceholder), {
+      target: { value: "Histoire" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: en.courses.add }));
+
+    await waitFor(() => expect(screen.getByText(en.errors.saveFailed)).not.toBeNull());
+    expect(screen.queryByText(en.errors.languageFailed)).toBeNull();
   });
 });
 

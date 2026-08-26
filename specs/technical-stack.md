@@ -414,8 +414,10 @@ Added by milestone 10, at the versions resolved on 2026-08-26: `tauri-plugin-dia
 `@tauri-apps/plugin-dialog` 2.7.2, `@tauri-apps/plugin-fs` 2.5.1.
 
 - Export and import use `@tauri-apps/plugin-dialog`'s `save()`/`open()` to choose the path and
-  `@tauri-apps/plugin-fs`'s `writeTextFile()`/`readTextFile()` to read and write it, entirely from JavaScript. No
-  Rust command is involved
+  `@tauri-apps/plugin-fs`'s `writeTextFile()`/`readTextFile()` to read and write it, entirely from JavaScript. That
+  covers the *file*, not the database: choosing a path and reading or writing its bytes never touches Rust, but the
+  import's actual database write does — see the Persistence section above for `import_homework_database` and why it
+  exists
 - Both plugins need their cargo dependency, their JS package, **and** their entries in
   `src-tauri/capabilities/default.json`: `dialog:default`, plus `fs:read-files` and `fs:write-files`. No static fs
   `scope` entry is configured, and none is needed — the dialog plugin's `save()`/`open()` dynamically add whatever

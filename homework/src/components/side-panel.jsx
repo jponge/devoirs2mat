@@ -29,10 +29,20 @@ import { setLanguage } from "@/i18n/preference";
 // sheet's own state: the first-run empty state in the main view opens this panel
 // from outside it.
 //
-// `onError` rather than a toast raised here: a write that failed is reported by
-// whoever owns the toaster, and keeping this component free of that decision is
-// what lets it be tested without one.
-export function SidePanel({ onError = () => {}, onBackupError = () => {}, open, onOpenChange }) {
+// Callbacks rather than a toast raised here: a write that failed is reported
+// by whoever owns the toaster, and keeping this component free of that
+// decision is what lets it be tested without one. Two separate callbacks,
+// not one shared `onError`, because the language switch and the course
+// editor warrant different messages — a shared one previously meant a failed
+// course write showed "Couldn't save the language.", which was never caught
+// because no test exercised a course-write failure through the full app.
+export function SidePanel({
+  onLanguageError = () => {},
+  onCourseError = () => {},
+  onBackupError = () => {},
+  open,
+  onOpenChange,
+}) {
   const { t, i18n } = useTranslation();
 
   const choose = async (language) => {
@@ -41,7 +51,7 @@ export function SidePanel({ onError = () => {}, onBackupError = () => {}, open, 
       // unsupported value. Neither check is repeated here.
       await setLanguage(language);
     } catch (failure) {
-      onError(failure);
+      onLanguageError(failure);
     }
   };
 
@@ -70,9 +80,14 @@ export function SidePanel({ onError = () => {}, onBackupError = () => {}, open, 
           }
         }}
       >
+        {/* The sheet's own title and description, kept for screen readers —
+            Radix expects a `Dialog.Title`/`Description` pair for the panel to
+            announce itself correctly — but not shown: the three section
+            headings below already say what this panel is for, and repeating
+            it above them was redundant. */}
         <SheetHeader>
-          <SheetTitle>{t("sidePanel.title")}</SheetTitle>
-          <SheetDescription>{t("sidePanel.description")}</SheetDescription>
+          <SheetTitle className="sr-only">{t("sidePanel.title")}</SheetTitle>
+          <SheetDescription className="sr-only">{t("sidePanel.description")}</SheetDescription>
         </SheetHeader>
 
         <div className="flex flex-col gap-3 px-4">
@@ -95,11 +110,11 @@ export function SidePanel({ onError = () => {}, onBackupError = () => {}, open, 
           </div>
         </div>
 
-        <Separator className="my-2" />
+        <Separator className="my-4" />
 
-        <CourseEditor onError={onError} />
+        <CourseEditor onError={onCourseError} />
 
-        <Separator className="my-2" />
+        <Separator className="my-4" />
 
         <BackupPanel onError={onBackupError} />
       </SheetContent>
