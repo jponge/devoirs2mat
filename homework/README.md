@@ -14,5 +14,9 @@ platform you're building for — Windows and Linux are cross-built from macOS (s
 installer when it's done. `./scripts/clean.sh` removes build outputs (`dist/`, `src-tauri/target/`, so every
 platform's installer) — safe to re-run, and there's nothing to undo since these are just rebuilt on demand.
 
+`./scripts/set-version.sh <version>` sets the release version (e.g. `./scripts/set-version.sh 2026.8.27`) across
+`package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json`, and syncs `Cargo.lock` to match. See the
+"Versioning" subsection of [`../specs/technical-stack.md`](../specs/technical-stack.md) for the version format.
+
 See [`../specs/`](../specs/) for the technical stack, the functional specifications and the design guidelines, and
 [`../CLAUDE.md`](../CLAUDE.md) for the working conventions.

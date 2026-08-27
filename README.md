@@ -23,6 +23,7 @@ cd homework
 ./scripts/build-windows.sh  # -> an NSIS .exe, cross-compiled via cargo-xwin
 ./scripts/build-linux.sh    # -> an AppImage, built inside a Podman container
 ./scripts/clean.sh          # removes build outputs (dist/, src-tauri/target/)
+./scripts/set-version.sh <version>  # sets the release version, e.g. 2026.8.27
 ```
 
 Each build script prints the path to the installer it produced when it's done. Windows and Linux builds are
@@ -35,7 +36,7 @@ To run the application itself during development rather than build an installer,
 
 ## License
 
-TO BE SPECIFIED LATER
+LGPL-3.0-only. See [LICENSE](LICENSE).
 
 ## Support
 

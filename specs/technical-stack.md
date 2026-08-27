@@ -489,6 +489,17 @@ Every script passes `--bundles <format>` to `tauri build` rather than changing `
 `bundle.targets` (which stays `"all"`, the honest default for a bare `pnpm tauri build`) — the scripts are what
 curate that down to a single obvious artifact per platform:
 
+### Versioning
+
+Releases are versioned `year.month.day` of the release date — e.g. `2026.8.27` for a release cut on 2026-08-27,
+unpadded so each segment stays a plain integer (Cargo and npm both parse versions as dot-separated integers, and a
+leading zero on a padded month/day is rejected by strict semver tooling). Not a build number: a second release the
+same day has no established scheme yet, and is not expected to happen given the release process above is a manual,
+one-family affair rather than something that cuts multiple releases in a day. The version is set in three places
+that must agree: `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json`. `homework/scripts/set-version.sh
+<version>` sets all three (rejecting anything that isn't unpadded `year.month.day`) and syncs `Cargo.lock`, which
+carries its own copy of the root package's version, by running `cargo check`.
+
 | Platform | Built how | Artifact |
 |---|---|---|
 | macOS | Natively, already on macOS | `.dmg` |
