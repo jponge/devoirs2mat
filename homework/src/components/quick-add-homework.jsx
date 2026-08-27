@@ -90,7 +90,7 @@ export function QuickAddHomework({ dueDate, onError = () => {} }) {
         variant="ghost"
         size="sm"
         aria-label={t("homework.add")}
-        className="w-fit gap-1 self-start opacity-0 transition-opacity group-hover:opacity-100"
+        className="w-fit gap-1 self-start opacity-0 transition-opacity group-hover/day:opacity-100"
         onClick={start}
       >
         <PlusIcon />

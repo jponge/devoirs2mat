@@ -24,7 +24,11 @@ export function DailyView({ onError }) {
     // and the fade-in below actually retriggers — without a key, React reuses
     // the same DOM node across days and the animation would only ever play
     // once, on the app's first render.
-    <section key={selectedDate} className="group flex animate-in flex-col gap-4 fade-in duration-300">
+    <section
+      key={selectedDate}
+      data-testid="day-list"
+      className="group/day flex animate-in flex-col gap-4 fade-in duration-300"
+    >
       {groups.length === 0 ? (
         <EmptyLine>{t("homework.empty")}</EmptyLine>
       ) : (

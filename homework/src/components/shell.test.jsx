@@ -525,6 +525,31 @@ describe("the weekly view", () => {
       expect(block.className).not.toMatch(/overflow-(y-)?(auto|scroll)/);
     }
   });
+
+  // A plain, unnamed `group` on the day block would make its `group-hover`
+  // reach every homework item inside it too — CSS `group-hover` is a
+  // descendant selector, not "nearest ancestor" — so hovering anywhere in the
+  // day, not just over one item, would reveal that item's edit/delete
+  // buttons. The day block's own affordance (quick-add) needs a named group
+  // so it stays independent of each item's.
+  it("keeps the day's quick-add hover independent of an item's edit/delete hover", async () => {
+    listHomeworkBetween.mockImplementation(async (from) => [
+      { id: 1, text: "a", due_date: from, course_id: 1, done: 0, created_at: "2026-08-01T00:00:00Z" },
+    ]);
+
+    await mount();
+    goWeekly();
+
+    const dayBlock = (await screen.findAllByTestId("day-block"))[0];
+    expect(dayBlock.className).not.toMatch(/(^|\s)group(\s|$)/);
+    expect(dayBlock.className).toMatch(/(^|\s)group\/day(\s|$)/);
+
+    const quickAdd = within(dayBlock).getByRole("button", { name: en.homework.add });
+    expect(quickAdd.className).toMatch(/group-hover\/day:opacity-100/);
+
+    const editButton = within(dayBlock).getByRole("button", { name: en.homework.edit });
+    expect(editButton.parentElement.className).toMatch(/(^|\s)group-hover:opacity-100/);
+  });
 });
 
 describe("the daily view", () => {
@@ -553,6 +578,28 @@ describe("the daily view", () => {
 
     await waitFor(() => expect(screen.getByText(en.homework.empty)).not.toBeNull());
     expect(screen.queryByTestId("homework-item")).toBeNull();
+  });
+
+  // Same bug class as the weekly view's day block: an unnamed `group` here
+  // would let the day's own quick-add hover reach every item's edit/delete
+  // buttons too. Daily view has no shared component with weekly view for
+  // this, so it needs its own pin.
+  it("keeps the day's quick-add hover independent of an item's edit/delete hover", async () => {
+    listHomeworkBetween.mockImplementation(async (from) => [
+      { id: 1, text: "a", due_date: from, course_id: 1, done: 0, created_at: "2026-08-01T00:00:00Z" },
+    ]);
+
+    await mount();
+
+    const dayList = screen.getByTestId("day-list");
+    expect(dayList.className).not.toMatch(/(^|\s)group(\s|$)/);
+    expect(dayList.className).toMatch(/(^|\s)group\/day(\s|$)/);
+
+    const quickAdd = within(dayList).getByRole("button", { name: en.homework.add });
+    expect(quickAdd.className).toMatch(/group-hover\/day:opacity-100/);
+
+    const editButton = within(dayList).getByRole("button", { name: en.homework.edit });
+    expect(editButton.parentElement.className).toMatch(/(^|\s)group-hover:opacity-100/);
   });
 });
 
