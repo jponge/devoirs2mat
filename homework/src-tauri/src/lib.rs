@@ -7,6 +7,18 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        // Restores window position/size/maximized state on launch and saves it
+        // on move/resize/close. Only these three flags: there is no fullscreen
+        // toggle or second window in this application.
+        .plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_state_flags(
+                    tauri_plugin_window_state::StateFlags::SIZE
+                        | tauri_plugin_window_state::StateFlags::POSITION
+                        | tauri_plugin_window_state::StateFlags::MAXIMIZED,
+                )
+                .build(),
+        )
         // The migrations are attached to the database URL here; the plugin runs
         // any that are outstanding when the connection is first loaded. The
         // `sqlite:` prefix makes the path relative to the application data

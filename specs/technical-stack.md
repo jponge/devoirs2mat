@@ -444,6 +444,25 @@ Added by milestone 10, at the versions resolved on 2026-08-26: `tauri-plugin-dia
   any pre-configured accessible paths." A static scope naming a fixed directory would be the wrong tool here — the
   student can save or open the file anywhere
 
+## Window state
+
+Added at the version resolved on 2026-08-27: `tauri-plugin-window-state` 2.4.1, Rust-side only — there is no
+`@tauri-apps/plugin-window-state` JS dependency, because nothing calls the plugin's commands from JavaScript.
+
+- Registered in `src-tauri/src/lib.rs` with `.with_state_flags(StateFlags::SIZE | StateFlags::POSITION |
+  StateFlags::MAXIMIZED)`. Those three are all this application needs: there is no fullscreen toggle and only one
+  window, so `StateFlags::FULLSCREEN`, `VISIBLE` and `DECORATIONS` (all set by the flag's `all()` default) would just
+  be unused bits
+- The plugin restores geometry before the window is created and saves it (debounced) on move/resize, and again on
+  close. It writes `.window-state.json` into the app's local data directory, alongside `homework.db` — this is UI
+  chrome state, not application data, so it is a plugin-owned JSON file rather than a row in the SQLite database, and
+  is intentionally absent from [the data model](data-model.md)
+- `tauri.conf.json`'s `"maximized": true` window default still governs the very first launch, before any state file
+  exists. Every launch after that is whatever geometry the plugin saved, `maximized` included, which is why the
+  config default is never in tension with what gets restored later
+- No `src-tauri/capabilities/default.json` entry was needed: the plugin does its restore/save work internally through
+  the Rust builder, and no window-state command is ever invoked from JavaScript
+
 ## Distribution
 
 There is no CI and no public release process — this is one family's application, and distribution means producing
