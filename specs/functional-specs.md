@@ -55,6 +55,15 @@ an empty state explaining that a course is needed first, with a button that open
 - Every card carries a checkbox, always visible and never hidden behind hover: completing homework is the most
   frequent action in the application, and it must also be scannable at a glance. Clicking it toggles completion and
   writes immediately, with no confirmation
+- When checking a box makes every homework entry due that specific date complete (nothing left for that day), a brief
+  kangaroo animation appears centered on that day's own card — the whole day section in the daily view, that day's
+  block in the weekly view. It plays one of three short gestures, cycling so the same one never plays twice in a row,
+  and fires again every time the condition becomes true — checking the last item, unchecking it, then checking it
+  again celebrates twice. It is purely decorative: it never blocks the write, carries no text, and is not announced to
+  assistive technology
+- Checking a box plays a brief, soft sound; unchecking it plays a different one. Both are short synthesized tones,
+  play on every toggle regardless of whether the day is also completing, and are decorative — a blocked or unavailable
+  sound is never reported as a failure
 - When a homework entry is completed, it still shows in the current day or weekly view. It stays exactly where it is —
   completion never removes it and never reorders it — and it is displayed checked, with muted and struck-through text
 - In a weekly view, we have blocks per-day, and homework entries are grouped under matching courses. The day blocks
@@ -145,6 +154,9 @@ It exposes further operations:
   error at startup — is reported with a toast
 - A problem the student can fix in place — no course chosen on a new entry — is reported inline, on the field itself
 - A failure is never silent: an action that did not work must say so
+- A successful export also shows a toast. Every other write already shows its own result somewhere in the interface —
+  a checked box, a renamed course — but an export's only effect is a file landing on disk, so it is the one success
+  that needs to say so explicitly
 
 ## What the application doesn't do in any view
 

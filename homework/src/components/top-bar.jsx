@@ -8,7 +8,15 @@ import { DateNavigator } from "@/components/date-navigator";
 import { SidePanel } from "@/components/side-panel";
 import { useAppData, VIEWS } from "@/components/app-data";
 
-export function TopBar({ onLanguageError, onCourseError, onBackupError, panelOpen, onPanelOpenChange }) {
+export function TopBar({
+  onLanguageError,
+  onCourseError,
+  onBackupError,
+  onExportSuccess,
+  onAboutError,
+  panelOpen,
+  onPanelOpenChange,
+}) {
   const { t } = useTranslation();
   const { view, setView, homework, from, to } = useAppData();
   // `homework` can briefly hold the previous range's entries while a fetch for
@@ -64,6 +72,8 @@ export function TopBar({ onLanguageError, onCourseError, onBackupError, panelOpe
           onLanguageError={onLanguageError}
           onCourseError={onCourseError}
           onBackupError={onBackupError}
+          onExportSuccess={onExportSuccess}
+          onAboutError={onAboutError}
           open={panelOpen}
           onOpenChange={onPanelOpenChange}
         />

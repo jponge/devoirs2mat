@@ -33,7 +33,7 @@ const SQL_FILTER = [{ name: "SQL", extensions: ["sql"] }];
 // `"importRefused"` or `"importFailed"`, each the exact suffix of its own
 // `backup.*` catalog key, so the caller can map it to copy with no lookup
 // table of its own (mirrors `reportHomeworkFailure`'s `"save"` / `"link"`).
-export function BackupPanel({ onError = () => {} }) {
+export function BackupPanel({ onError = () => {}, onExportSuccess = () => {} }) {
   const { t } = useTranslation();
   const { reload } = useAppData();
   const [pendingImport, setPendingImport] = useState(null);
@@ -51,6 +51,12 @@ export function BackupPanel({ onError = () => {} }) {
       }
       const text = await exportDatabase();
       await writeTextFile(path, text);
+      // Unlike every other write in this application, a successful export
+      // leaves no visible trace anywhere in the interface — the checkbox
+      // toggle shows a struck-through card, a rename shows the new name, but
+      // the file just lands on disk. This is the one write whose success
+      // needs a toast rather than relying on the UI already showing it.
+      onExportSuccess();
     } catch (failure) {
       onError(failure, "exportFailed");
     }

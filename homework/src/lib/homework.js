@@ -20,3 +20,19 @@ export function validateHomeworkCourseId(courseId, courseOptions) {
   }
   return courseOptions.some((course) => course.id === courseId) ? null : "required";
 }
+
+// Whether toggling `toggledItemId` to `checked` makes every homework entry
+// due this day complete. `dayItems` must already be filtered to one
+// `due_date` by the caller — this function knows nothing about dates.
+//
+// Stateless by design: it answers the question fresh from `dayItems` every
+// time, with no "already celebrated today" memory. The toggled item's own
+// `done` value is never read, since the write it belongs to has not landed
+// yet when this runs — only `checked`, the value it is about to become,
+// decides the outcome for that one item.
+export function isLastUndoneForDay(dayItems, toggledItemId, checked) {
+  if (!checked) {
+    return false;
+  }
+  return dayItems.every((item) => item.id === toggledItemId || item.done === 1);
+}

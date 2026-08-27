@@ -93,7 +93,8 @@
     "confirmTitle": "Replace everything?",
     "confirmBody": "This replaces your courses and your homework with what’s in the file. You can’t undo this.",
     "confirmAction": "Import",
-    "confirmCancel": "Cancel"
+    "confirmCancel": "Cancel",
+    "exportSucceeded": "Exported."
   },
   "language": {
     "en": "English",
@@ -105,5 +106,10 @@
     "languageFailed": "Couldn’t save the language.",
     "saveFailed": "Couldn’t save your change.",
     "linkFailed": "Couldn’t open that link."
+  },
+  "about": {
+    "title": "About",
+    "kangarooCredit": "The kangaroo animation’s silhouette is by Lionel Allorge, licensed CC BY-SA 3.0.",
+    "kangarooCreditLink": "View the original file"
   }
 }

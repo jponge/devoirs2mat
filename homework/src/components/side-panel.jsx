@@ -10,6 +10,7 @@
 // section, each separated by a divider.
 import { useTranslation } from "react-i18next";
 import { MenuIcon } from "lucide-react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { CourseEditor } from "@/components/course-editor";
@@ -40,6 +41,8 @@ export function SidePanel({
   onLanguageError = () => {},
   onCourseError = () => {},
   onBackupError = () => {},
+  onExportSuccess = () => {},
+  onAboutError = () => {},
   open,
   onOpenChange,
 }) {
@@ -52,6 +55,18 @@ export function SidePanel({
       await setLanguage(language);
     } catch (failure) {
       onLanguageError(failure);
+    }
+  };
+
+  // The kangaroo celebration's silhouette is CC BY-SA 3.0, which requires
+  // this credit to stay reasonably visible to the end user — do not remove
+  // it as clutter. Opened in the system browser, never the app webview, the
+  // same rule every other outbound link in this codebase follows.
+  const openCredit = async () => {
+    try {
+      await openUrl("https://commons.wikimedia.org/wiki/File:Kangourou.svg");
+    } catch (failure) {
+      onAboutError(failure, "link");
     }
   };
 
@@ -116,7 +131,17 @@ export function SidePanel({
 
         <Separator className="my-4" />
 
-        <BackupPanel onError={onBackupError} />
+        <BackupPanel onError={onBackupError} onExportSuccess={onExportSuccess} />
+
+        <Separator className="my-4" />
+
+        <div className="flex flex-col gap-3 px-4">
+          <h3 className="text-sm font-medium">{t("about.title")}</h3>
+          <p className="text-sm text-muted-foreground">{t("about.kangarooCredit")}</p>
+          <Button variant="link" className="h-auto justify-start p-0" onClick={openCredit}>
+            {t("about.kangarooCreditLink")}
+          </Button>
+        </div>
       </SheetContent>
     </Sheet>
   );

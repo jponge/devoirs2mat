@@ -99,6 +99,38 @@ describe("exporting", () => {
 
     await waitFor(() => expect(onError).toHaveBeenCalledWith(expect.any(Error), "exportFailed"));
   });
+
+  it("reports success once the file is actually written, unlike every other write which shows no toast", async () => {
+    const onExportSuccess = vi.fn();
+    await mount({ onExportSuccess });
+
+    fireEvent.click(screen.getByRole("button", { name: en.backup.export }));
+
+    await waitFor(() => expect(writeTextFile).toHaveBeenCalled());
+    expect(onExportSuccess).toHaveBeenCalled();
+  });
+
+  it("does not report success when the save dialog is cancelled", async () => {
+    save.mockResolvedValue(null);
+    const onExportSuccess = vi.fn();
+    await mount({ onExportSuccess });
+
+    fireEvent.click(screen.getByRole("button", { name: en.backup.export }));
+
+    await waitFor(() => expect(save).toHaveBeenCalled());
+    expect(onExportSuccess).not.toHaveBeenCalled();
+  });
+
+  it("does not report success when the write fails", async () => {
+    const onExportSuccess = vi.fn();
+    writeTextFile.mockRejectedValue(new Error("disk full"));
+    await mount({ onExportSuccess });
+
+    fireEvent.click(screen.getByRole("button", { name: en.backup.export }));
+
+    await waitFor(() => expect(writeTextFile).toHaveBeenCalled());
+    expect(onExportSuccess).not.toHaveBeenCalled();
+  });
 });
 
 describe("importing", () => {

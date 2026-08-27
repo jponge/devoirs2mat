@@ -14,6 +14,11 @@ const { listCourses, listHomeworkBetween, setHomeworkDone, updateHomework, delet
     deleteHomework: vi.fn(),
   }));
 const { openUrl } = vi.hoisted(() => ({ openUrl: vi.fn() }));
+const { emitDayCompleted } = vi.hoisted(() => ({ emitDayCompleted: vi.fn() }));
+const { playCheckSound, playUncheckSound } = vi.hoisted(() => ({
+  playCheckSound: vi.fn(),
+  playUncheckSound: vi.fn(),
+}));
 
 vi.mock("@/db/courses", () => ({ listCourses }));
 vi.mock("@/db/homework", () => ({
@@ -23,6 +28,8 @@ vi.mock("@/db/homework", () => ({
   deleteHomework,
 }));
 vi.mock("@tauri-apps/plugin-opener", () => ({ openUrl }));
+vi.mock("@/lib/celebration", () => ({ emitDayCompleted }));
+vi.mock("@/lib/sound", () => ({ playCheckSound, playUncheckSound }));
 
 const COURSE = { id: 1, name: "Maths", color: "#22c55e", archived_at: null };
 
@@ -357,6 +364,67 @@ describe("toggling completion", () => {
 
     await waitFor(() => expect(onError).toHaveBeenCalledWith(expect.any(Error), "save"));
   });
+
+  it("fires the celebration when checking the last undone item of the day", async () => {
+    const items = [
+      item({ id: 1, done: 0, created_at: "2026-08-20T08:00:00Z" }),
+      item({ id: 2, done: 1, created_at: "2026-08-20T09:00:00Z" }),
+    ];
+    listHomeworkBetween.mockResolvedValue(items);
+    await mount(<CourseGroup group={group(COURSE, items)} />);
+
+    fireEvent.click(screen.getAllByRole("checkbox")[0]);
+
+    await waitFor(() => expect(emitDayCompleted).toHaveBeenCalledWith("2026-08-25"));
+  });
+
+  it("does not fire the celebration while another item due the same day is still undone", async () => {
+    const items = [
+      item({ id: 1, done: 0, created_at: "2026-08-20T08:00:00Z" }),
+      item({ id: 2, done: 0, created_at: "2026-08-20T09:00:00Z" }),
+    ];
+    listHomeworkBetween.mockResolvedValue(items);
+    await mount(<CourseGroup group={group(COURSE, items)} />);
+
+    fireEvent.click(screen.getAllByRole("checkbox")[0]);
+
+    await waitFor(() => expect(setHomeworkDone).toHaveBeenCalled());
+    expect(emitDayCompleted).not.toHaveBeenCalled();
+  });
+
+  it("does not fire the celebration on uncheck, even for the day's only item", async () => {
+    listHomeworkBetween.mockResolvedValue([item({ done: 1 })]);
+    await mount(<CourseGroup group={group(COURSE, [item({ done: 1 })])} />);
+
+    fireEvent.click(screen.getByRole("checkbox"));
+
+    await waitFor(() => expect(setHomeworkDone).toHaveBeenCalledWith(1, false));
+    expect(emitDayCompleted).not.toHaveBeenCalled();
+  });
+
+  it("plays the check sound on every check, whether or not it celebrates", async () => {
+    const items = [
+      item({ id: 1, done: 0, created_at: "2026-08-20T08:00:00Z" }),
+      item({ id: 2, done: 0, created_at: "2026-08-20T09:00:00Z" }),
+    ];
+    listHomeworkBetween.mockResolvedValue(items);
+    await mount(<CourseGroup group={group(COURSE, items)} />);
+
+    fireEvent.click(screen.getAllByRole("checkbox")[0]);
+
+    await waitFor(() => expect(playCheckSound).toHaveBeenCalled());
+    expect(playUncheckSound).not.toHaveBeenCalled();
+  });
+
+  it("plays the uncheck sound on every uncheck", async () => {
+    listHomeworkBetween.mockResolvedValue([item({ done: 1 })]);
+    await mount(<CourseGroup group={group(COURSE, [item({ done: 1 })])} />);
+
+    fireEvent.click(screen.getByRole("checkbox"));
+
+    await waitFor(() => expect(playUncheckSound).toHaveBeenCalled());
+    expect(playCheckSound).not.toHaveBeenCalled();
+  });
 });
 
 describe("opening a link", () => {
@@ -409,6 +477,14 @@ describe("editing a homework entry", () => {
     expect(screen.getByRole("button", { name: en.homework.dueDate }).textContent).toBe(
       "Tuesday, August 25, 2026",
     );
+  });
+
+  it("focuses the text field, the same as a fresh quick-add draft", async () => {
+    await mount(<CourseGroup group={group(COURSE, [item({ text: "avant" })])} />);
+
+    await openEdit();
+
+    expect(document.activeElement).toBe(screen.getByDisplayValue("avant"));
   });
 
   it("commits the typed text and the chosen course on Save, then reloads", async () => {

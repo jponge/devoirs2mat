@@ -88,6 +88,13 @@
     --sidebar-accent-foreground: oklch(0.214 0.009 43.1);
     --sidebar-border: oklch(0.922 0.005 34.3);
     --sidebar-ring: oklch(0.714 0.014 41.2);
+
+    /* Celebration-only tokens (kangaroo sprite), deliberately outside the
+       shadcn preset — see specs/design-guidelines.md. Not named --accent or
+       --primary: the preset already defines those with unrelated values. */
+    --celebration-warm: #a8703c;
+    --celebration-green: #4f7a6b;
+    --celebration-blue: #3f6f92;
 }
 
 .dark {
@@ -122,6 +129,121 @@
     --sidebar-accent-foreground: oklch(0.986 0.002 67.8);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.547 0.021 43.1);
+
+    --celebration-warm: #d79a4d;
+    --celebration-green: #7fb6a2;
+    --celebration-blue: #7fa8c9;
+}
+
+/* Kangaroo celebration animation. The first hand-written @keyframes in this
+   codebase — every other animation comes from tw-animate-css's utilities.
+   Amplitudes below are sized for the sprite's own ~1000-unit SVG coordinate
+   space (see src/components/kangaroo-sprite.jsx), not ordinary CSS pixels. */
+
+@keyframes roo-pop {
+  0% { transform: scale(0.6) translateY(10px); opacity: 0; }
+  18% { opacity: 1; }
+  55% { transform: scale(1.06) translateY(-4px); }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes roo-fade-out {
+  to { transform: translateY(-6px) scale(0.92); opacity: 0; }
+}
+
+/* Pop: three staccato punchy bounces with a squash/stretch. */
+@keyframes roo-bounce-punchy {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  11% { transform: translateY(-72px) scale(1.08, 0.92); }
+  22% { transform: translateY(0) scale(0.95, 1.05); }
+  39% { transform: translateY(-58px) scale(1.06, 0.94); }
+  50% { transform: translateY(0) scale(0.96, 1.04); }
+  67% { transform: translateY(-40px) scale(1.04, 0.96); }
+  78% { transform: translateY(0) scale(1, 1); }
+}
+
+/* Nod: three calm, decaying settles — the opposite energy of the pop. */
+@keyframes roo-dip {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  17% { transform: translateY(38px) rotate(3deg); }
+  34% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(24px) rotate(2deg); }
+  66% { transform: translateY(0) rotate(0deg); }
+  82% { transform: translateY(12px) rotate(1deg); }
+}
+
+/* Sway: three left-right rocks, decaying — continuous, not bouncy. */
+@keyframes roo-sway {
+  0%, 100% { transform: rotate(0deg); }
+  14% { transform: rotate(-11deg); }
+  28% { transform: rotate(9deg); }
+  42% { transform: rotate(-7deg); }
+  56% { transform: rotate(6deg); }
+  70% { transform: rotate(-4deg); }
+  84% { transform: rotate(3deg); }
+}
+
+/* Pop's accent: three dots scale up, fly outward via --dx/--dy, fade. */
+@keyframes accent-burst-dot {
+  0% { transform: translate(0, 0) scale(0.3); opacity: 0; }
+  22% { transform: translate(0, 0) scale(2.4); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.6); opacity: 0; }
+}
+
+/* Nod's accent: a sparkle scaling and rotating in, then out. */
+@keyframes accent-sparkle-pop {
+  0% { transform: scale(0) rotate(-8deg); opacity: 0; }
+  35% { transform: scale(2.6) rotate(0deg); opacity: 1; }
+  65% { transform: scale(2); opacity: 1; }
+  100% { transform: scale(0.8) rotate(8deg); opacity: 0; }
+}
+
+/* Sway's accent: an arc sweeping past, fading in then out. */
+@keyframes accent-trail-fade {
+  0% { opacity: 0; transform: translate(-14px, 7px); }
+  25% { opacity: 1; transform: translate(0, 0); }
+  100% { opacity: 0; transform: translate(22px, -12px); }
+}
+
+/* Rendered by src/components/kangaroo-sprite.jsx. Body motion lives on
+   `.silhouette-group`, never on `.roo` itself, so it never drags the accents
+   (siblings) along with it. Each gesture's pivot points are its own, not
+   shared, since each has its own accent placement. */
+.roo { opacity: 0; }
+.roo.playing { animation: roo-pop 0.35s ease-out forwards; }
+.roo.leaving { animation: roo-fade-out 0.28s ease-in forwards; }
+
+.roo .ground { fill: var(--muted-foreground); opacity: 0.22; }
+.roo .silhouette { fill: var(--celebration-warm); }
+
+.roo .accent { opacity: 0; }
+.roo .accent-burst { fill: var(--celebration-warm); }
+.roo .accent-sparkle { fill: var(--celebration-green); }
+.roo .accent-trail { fill: none; stroke: var(--celebration-blue); stroke-width: 30; stroke-linecap: round; }
+
+.roo.gesture-pop.playing .silhouette-group {
+  transform-origin: 520px 700px;
+  animation: roo-bounce-punchy 0.9s ease-in-out 0.3s 1;
+}
+.roo.gesture-nod.playing .silhouette-group {
+  transform-origin: 520px 700px;
+  animation: roo-dip 0.9s ease-in-out 0.3s 1;
+}
+.roo.gesture-sway.playing .silhouette-group {
+  transform-origin: 520px 700px;
+  animation: roo-sway 0.9s ease-in-out 0.3s 1;
+}
+
+.roo.gesture-pop.playing .accent-burst {
+  animation: accent-burst-dot 0.85s ease-out 0.3s 1;
+  transform-origin: 520px -40px;
+}
+.roo.gesture-nod.playing .accent-sparkle {
+  animation: accent-sparkle-pop 0.55s ease-out 1;
+  transform-origin: 520px -40px;
+}
+.roo.gesture-sway.playing .accent-trail {
+  animation: accent-trail-fade 0.7s ease-out 1;
 }
 
 @layer base {

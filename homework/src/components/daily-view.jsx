@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useAppData } from "@/components/app-data";
 import { CourseGroup, EmptyLine } from "@/components/course-group";
 import { QuickAddHomework } from "@/components/quick-add-homework";
+import { CelebrationLayer } from "@/components/celebration-layer";
 import { groupByCourse } from "@/lib/grouping";
 
 export function DailyView({ onError }) {
@@ -27,7 +28,8 @@ export function DailyView({ onError }) {
     <section
       key={selectedDate}
       data-testid="day-list"
-      className="group/day flex animate-in flex-col gap-4 fade-in duration-300"
+      data-day-date={selectedDate}
+      className="group/day relative flex animate-in flex-col gap-4 fade-in duration-300"
     >
       {groups.length === 0 ? (
         <EmptyLine>{t("homework.empty")}</EmptyLine>
@@ -35,6 +37,7 @@ export function DailyView({ onError }) {
         groups.map((group) => <CourseGroup key={group.course.id} group={group} onError={onError} />)
       )}
       <QuickAddHomework dueDate={selectedDate} onError={onError} />
+      <CelebrationLayer date={selectedDate} />
     </section>
   );
 }

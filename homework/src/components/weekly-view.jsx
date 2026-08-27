@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { useAppData } from "@/components/app-data";
 import { CourseGroup, EmptyLine } from "@/components/course-group";
 import { QuickAddHomework } from "@/components/quick-add-homework";
+import { CelebrationLayer } from "@/components/celebration-layer";
 import { groupWeek } from "@/lib/grouping";
 import { weekDays } from "@/lib/dates";
 import { formatDayHeading } from "@/lib/format-dates";
@@ -24,7 +25,8 @@ function DayBlock({ day, language, onError }) {
     // retriggers on navigation instead of only ever playing once.
     <section
       data-testid="day-block"
-      className="group/day flex animate-in flex-col gap-3 rounded-lg border bg-card p-4 shadow-xs fade-in duration-300"
+      data-day-date={day.date}
+      className="group/day relative flex animate-in flex-col gap-3 rounded-lg border bg-card p-4 shadow-xs fade-in duration-300"
     >
       <h2 className="text-sm font-semibold">{formatDayHeading(day.date, language)}</h2>
       {day.groups.length === 0 ? (
@@ -35,6 +37,7 @@ function DayBlock({ day, language, onError }) {
         ))
       )}
       <QuickAddHomework dueDate={day.date} onError={onError} />
+      <CelebrationLayer date={day.date} />
     </section>
   );
 }

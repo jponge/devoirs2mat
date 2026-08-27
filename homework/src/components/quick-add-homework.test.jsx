@@ -90,6 +90,14 @@ describe("opening a draft", () => {
     expect(screen.getByText("Tuesday, August 25, 2026")).not.toBeNull();
   });
 
+  it("focuses the text field, since typing is the very next thing a student does", async () => {
+    await mount();
+
+    openDraft();
+
+    expect(document.activeElement).toBe(screen.getByRole("textbox"));
+  });
+
   it("hides the add button once a draft is open, so a second one cannot be started", async () => {
     await mount();
 

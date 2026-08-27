@@ -146,6 +146,12 @@ function App({ startupError = null }) {
     [t],
   );
 
+  // The one write in the application whose success leaves no other visible
+  // trace — everything else already shows its own result in the UI.
+  const reportExportSuccess = useCallback(() => {
+    toast.success(t("backup.exportSucceeded"));
+  }, [t]);
+
   return (
     <AppDataProvider>
       <div className="flex min-h-svh flex-col">
@@ -153,6 +159,8 @@ function App({ startupError = null }) {
           onLanguageError={reportLanguageFailure}
           onCourseError={reportWriteFailure}
           onBackupError={reportBackupFailure}
+          onExportSuccess={reportExportSuccess}
+          onAboutError={reportWriteFailure}
           panelOpen={panelOpen}
           onPanelOpenChange={setPanelOpen}
         />

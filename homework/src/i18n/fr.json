@@ -93,7 +93,8 @@
     "confirmTitle": "Tout remplacer ?",
     "confirmBody": "Ceci remplace tes matières et tes devoirs par ce qu’il y a dans le fichier. Tu ne pourras pas revenir en arrière.",
     "confirmAction": "Importer",
-    "confirmCancel": "Annuler"
+    "confirmCancel": "Annuler",
+    "exportSucceeded": "Export réussi."
   },
   "language": {
     "en": "English",
@@ -105,5 +106,10 @@
     "languageFailed": "Impossible d’enregistrer la langue.",
     "saveFailed": "Impossible d’enregistrer ta modification.",
     "linkFailed": "Impossible d’ouvrir ce lien."
+  },
+  "about": {
+    "title": "À propos",
+    "kangarooCredit": "La silhouette du kangourou est de Lionel Allorge, sous licence CC BY-SA 3.0.",
+    "kangarooCreditLink": "Voir le fichier d’origine"
   }
 }

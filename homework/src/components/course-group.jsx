@@ -40,10 +40,12 @@ import { updateHomework, deleteHomework, setHomeworkDone } from "@/db/homework";
 import { isAllowedLinkScheme } from "@/lib/markdown-links";
 import { isActiveCourse } from "@/lib/courses";
 import { sortCourses } from "@/lib/grouping";
-import { validateHomeworkCourseId } from "@/lib/homework";
+import { validateHomeworkCourseId, isLastUndoneForDay } from "@/lib/homework";
 import { fromLocalDate, toLocalDate } from "@/lib/dates";
 import { formatFullDate } from "@/lib/format-dates";
 import { intlFormatters, intlLabels } from "@/lib/calendar-intl";
+import { emitDayCompleted } from "@/lib/celebration";
+import { playCheckSound, playUncheckSound } from "@/lib/sound";
 
 // The inline subset plus bulleted and numbered lists, per
 // `specs/functional-specs.md`. `del` is what `remark-gfm`'s strikethrough
@@ -128,6 +130,11 @@ export function HomeworkEditForm({
         onChange={(event) => onTextChange(event.target.value)}
         placeholder={t("homework.textPlaceholder")}
         aria-label={t("homework.textPlaceholder")}
+        // Typing is the very next thing a student does, whether this is a
+        // fresh quick-add draft or an in-place edit just opened — saving the
+        // extra click into the field on the single most frequent form in the
+        // application.
+        autoFocus
       />
       <div className="flex flex-wrap items-center gap-2">
         {/* Radix `Select` values are strings; the id round-trips through
@@ -371,10 +378,23 @@ function HomeworkCard({ item, courses, locale, onToggle, onSave, onDelete, onErr
 
 export function CourseGroup({ group, onError = () => {} }) {
   const { i18n } = useTranslation();
-  const { reload, courses, recordCourseUsed } = useAppData();
+  const { reload, courses, recordCourseUsed, homework } = useAppData();
   const archived = group.course.archived_at !== null && group.course.archived_at !== undefined;
 
   const toggle = async (item, checked) => {
+    // `homework` is the full visible-range array from context, not
+    // `group.homework` — that narrower one only holds this course's own
+    // items, which would make every day look like it only ever has one
+    // course's homework in it.
+    const dayItems = homework.filter((entry) => entry.due_date === item.due_date);
+    if (isLastUndoneForDay(dayItems, item.id, checked)) {
+      emitDayCompleted(item.due_date);
+    }
+    if (checked) {
+      playCheckSound();
+    } else {
+      playUncheckSound();
+    }
     try {
       await setHomeworkDone(item.id, checked);
       await reload();
