@@ -1,9 +1,25 @@
 mod backup;
 mod migrations;
 
+use tauri::Manager;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+
+    // Must be the first plugin registered (Tauri's own requirement) so it can
+    // intercept a second launch before anything else starts up. A second
+    // launch focuses the existing window instead of opening a second one,
+    // which matters here because two processes writing to the same
+    // homework.db is not a scenario this app is designed for.
+    #[cfg(desktop)]
+    let builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        if let Some(window) = app.get_webview_window("main") {
+            let _ = window.set_focus();
+        }
+    }));
+
+    builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())

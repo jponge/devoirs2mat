@@ -463,6 +463,22 @@ Added at the version resolved on 2026-08-27: `tauri-plugin-window-state` 2.4.1, 
 - No `src-tauri/capabilities/default.json` entry was needed: the plugin does its restore/save work internally through
   the Rust builder, and no window-state command is ever invoked from JavaScript
 
+## Single instance
+
+Added at the version resolved on 2026-08-27: `tauri-plugin-single-instance` 2.4.3, Rust-side only. This is a
+single-user, single-instance application by design (see the Persistence section above); the plugin turns that from an
+assumption into something enforced, so a second launch (a double-click on the icon, say) cannot open a second process
+against the same `homework.db`.
+
+- Registered in `src-tauri/src/lib.rs` as the **first** plugin, before any other `.plugin()` call — Tauri requires
+  this so it can intercept a second launch before the rest of the app starts initialising
+- Guarded with `#[cfg(desktop)]`: the plugin does not build for mobile targets, which is moot today since this
+  application has no mobile plans, but it is the pattern Tauri's own documentation uses and costs nothing
+- Its callback focuses the existing `"main"` window (the app's only window, and the default label since
+  `tauri.conf.json` never sets one explicitly) rather than opening anything new
+- No `src-tauri/capabilities/default.json` entry was needed, for the same reason as the window-state plugin: nothing
+  calls into it from JavaScript
+
 ## Distribution
 
 There is no CI and no public release process — this is one family's application, and distribution means producing
