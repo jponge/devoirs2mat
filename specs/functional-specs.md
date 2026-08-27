@@ -36,6 +36,8 @@ an empty state explaining that a course is needed first, with a button that open
 - The focus is on homework entries
 - The application offers daily and weekly views. A segmented Daily / Weekly control sits next to the date selection
   component, and switching views keeps the currently selected date
+- The top bar's left side shows how many homework entries in the visible range (the day, or the Monday–Sunday week)
+  are not yet done, e.g. "3 left to do". At zero it shows an encouraging message instead of a count
 - A homework entry has some text, a due date, a course, and a completion mark. The completion mark is a single
   boolean. The text may be empty: an entry can deliberately be saved with no text yet and filled in later, so nothing
   ever refuses to save on empty text. The course is mandatory

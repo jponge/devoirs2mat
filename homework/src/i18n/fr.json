@@ -9,7 +9,9 @@
     "previousMonth": "Mois précédent",
     "nextMonth": "Mois suivant",
     "calendarNav": "Calendrier",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "remaining": "{{count}} à faire",
+    "remainingNone": "Tout est fait, bravo !"
   },
   "view": {
     "daily": "Jour",

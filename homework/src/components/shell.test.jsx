@@ -228,6 +228,54 @@ describe("the top bar", () => {
     expect(screen.getByRole("radio", { name: fr.view.weekly })).not.toBeNull();
     expect(screen.getByRole("button", { name: fr.topBar.nextDay })).not.toBeNull();
   });
+
+  it("counts the undone homework in the visible range", async () => {
+    listHomeworkBetween.mockImplementation(async (from) => [
+      { id: 1, text: "a", due_date: from, course_id: 1, done: 0, created_at: "2026-08-01T00:00:00Z" },
+      { id: 2, text: "b", due_date: from, course_id: 1, done: 0, created_at: "2026-08-01T00:00:00Z" },
+      { id: 3, text: "c", due_date: from, course_id: 1, done: 1, created_at: "2026-08-01T00:00:00Z" },
+    ]);
+
+    await mount();
+
+    expect(screen.getByText(en.topBar.remaining.replace("{{count}}", "2"))).not.toBeNull();
+  });
+
+  it("shows a positive message when nothing is left to do", async () => {
+    listHomeworkBetween.mockImplementation(async (from) => [
+      { id: 1, text: "a", due_date: from, course_id: 1, done: 1, created_at: "2026-08-01T00:00:00Z" },
+    ]);
+
+    await mount();
+
+    expect(screen.getByText(en.topBar.remainingNone)).not.toBeNull();
+
+    await i18n.changeLanguage("fr");
+
+    expect(screen.getByText(fr.topBar.remainingNone)).not.toBeNull();
+  });
+
+  // Pins the count to `homework` itself, not to whatever it happened to be at
+  // mount — a `useMemo` with the wrong dependency list would pass every other
+  // test above yet fail this one silently.
+  it("updates the count as the visible range changes", async () => {
+    listHomeworkBetween.mockImplementationOnce(async (from) => [
+      { id: 1, text: "a", due_date: from, course_id: 1, done: 0, created_at: "2026-08-01T00:00:00Z" },
+    ]);
+    listHomeworkBetween.mockImplementation(async (from) => [
+      { id: 1, text: "a", due_date: from, course_id: 1, done: 0, created_at: "2026-08-01T00:00:00Z" },
+      { id: 2, text: "b", due_date: from, course_id: 1, done: 0, created_at: "2026-08-01T00:00:00Z" },
+    ]);
+
+    await mount();
+    expect(screen.getByText(en.topBar.remaining.replace("{{count}}", "1"))).not.toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: en.topBar.nextDay }));
+
+    await waitFor(() =>
+      expect(screen.getByText(en.topBar.remaining.replace("{{count}}", "2"))).not.toBeNull(),
+    );
+  });
 });
 
 describe("the date picker", () => {
