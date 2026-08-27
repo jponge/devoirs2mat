@@ -71,6 +71,24 @@ thing.
   direct dependency of `src-tauri` too, pinned to `"0.8"` to match the version `tauri-plugin-sql` itself uses —
   Cargo will not unify two different major versions of the same crate into one type, so a mismatched version would
   fail to compile where the two touch (returning a `Pool<Sqlite>` from one and expecting it in the other)
+- **Before that transaction runs, `import_homework_database` writes a pre-restore snapshot of the current database**,
+  using SQLite's `VACUUM INTO` rather than re-implementing the SQL-export dump in Rust: it produces a single-statement,
+  consistent snapshot regardless of WAL state. `VACUUM INTO` must run directly on the pool, before `pool.begin()` —
+  SQLite does not allow it inside an explicit transaction. If the snapshot write fails, the import is aborted entirely
+  and the transaction never starts. The write targets a temp path (`last-known-good.db.tmp`) first, then
+  `std::fs::rename`s it into place over any previous snapshot at `last-known-good.db`; the previous file is removed
+  immediately before the rename because `std::fs::rename` only overwrites its destination atomically on POSIX
+  (macOS, Linux) — on Windows it fails if the destination already exists, and this app ships Windows builds. The
+  command wrapper takes an additional `app: tauri::AppHandle` parameter (Tauri injects it automatically, no JS-side
+  call-site change) to resolve the snapshot's directory with `app.path().app_data_dir()` (the `tauri::Manager` trait),
+  the same app data directory `"sqlite:homework.db"` already resolves relative to
+- `VACUUM INTO`'s bind-parameter form (`sqlx::query("VACUUM INTO ?").bind(path)`) works correctly against a real
+  file-backed source database with the pinned `sqlx` 0.8 / SQLite version. It does **not** work against a
+  `sqlite::memory:` source pool — `execute()` returns `Ok` but no file is written at all, a pool-per-connection quirk
+  of sqlx's in-memory handling confirmed empirically (and cross-checked against `rusqlite`, which has no such issue).
+  This never affects production, since the app's database is always file-backed, but the Rust unit tests for
+  `run_import` use a real temp-file `SqlitePool` as their source, not `sqlite::memory:` like the rest of this module's
+  tests, specifically because of this
 - The export side needed no such fix: it reads all three tables in one `db.select()` call, and a single SQL
   statement is already an atomic, consistent snapshot for its own duration — there is no transaction to manage
 - The `sqlite` cargo feature must be enabled on `tauri-plugin-sql`, otherwise the crate compiles and every query fails

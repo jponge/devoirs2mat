@@ -187,3 +187,8 @@ So invariant 1 is a constraint, not documentation. Re-check this if the plugin e
   partially applied
 - A restore wipes and repopulates those three tables inside one transaction. It never drops or creates them, so the
   schema is always the one the migrations produced
+- Before that transaction runs, the application writes a complete copy of the current database to
+  `last-known-good.db`, in the same app data directory as `homework.db`. This is a raw SQLite file produced by
+  `VACUUM INTO` — not the `.sql` export text format — and it is a rolling single file, overwritten on every import
+  attempt, never accumulating a history. It is never read, written, or otherwise touched by any code path other than
+  the import command itself

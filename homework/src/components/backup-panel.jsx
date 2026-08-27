@@ -29,9 +29,9 @@ import { todayDate } from "@/lib/dates";
 
 const SQL_FILTER = [{ name: "SQL", extensions: ["sql"] }];
 
-// `onError(failure, kind)` — `kind` is one of `"exportFailed"`,
-// `"importRefused"` or `"importFailed"`, each the exact suffix of its own
-// `backup.*` catalog key, so the caller can map it to copy with no lookup
+// `onError(failure, kind)` — `kind` is one of `"exportFailed"`, `"importRefused"`,
+// `"importFailed"` or `"importSucceededRefreshFailed"`, each the exact suffix of
+// its own `backup.*` catalog key, so the caller can map it to copy with no lookup
 // table of its own (mirrors `reportHomeworkFailure`'s `"save"` / `"link"`).
 export function BackupPanel({ onError = () => {}, onExportSuccess = () => {} }) {
   const { t } = useTranslation();
@@ -85,6 +85,11 @@ export function BackupPanel({ onError = () => {}, onExportSuccess = () => {} }) 
     setPendingImport(null);
     try {
       await importDatabase(text);
+    } catch (failure) {
+      onError(failure, "importFailed");
+      return;
+    }
+    try {
       // A restore replaces `settings` too, so `settings.language` can change
       // under the running application — re-resolve it exactly the way
       // startup does, rather than leaving the interface in a language the
@@ -92,7 +97,7 @@ export function BackupPanel({ onError = () => {}, onExportSuccess = () => {} }) 
       await startLanguage();
       await reload();
     } catch (failure) {
-      onError(failure, "importFailed");
+      onError(failure, "importSucceededRefreshFailed");
     }
   };
 

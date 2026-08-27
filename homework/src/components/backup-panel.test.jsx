@@ -217,4 +217,20 @@ describe("importing", () => {
 
     await waitFor(() => expect(onError).toHaveBeenCalledWith(expect.any(Error), "importFailed"));
   });
+
+  it("reports a distinct failure when the restore commits but the language re-resolve fails, without retrying the import", async () => {
+    const onError = vi.fn();
+    startLanguage.mockRejectedValue(new Error("settings row is missing"));
+    await mount({ onError });
+    fireEvent.click(screen.getByRole("button", { name: en.backup.import }));
+    await waitFor(() => expect(screen.getByRole("alertdialog")).not.toBeNull());
+
+    fireEvent.click(screen.getByRole("button", { name: en.backup.confirmAction }));
+
+    await waitFor(() =>
+      expect(onError).toHaveBeenCalledWith(expect.any(Error), "importSucceededRefreshFailed"),
+    );
+    expect(onError).not.toHaveBeenCalledWith(expect.anything(), "importFailed");
+    expect(importDatabase).toHaveBeenCalledTimes(1);
+  });
 });

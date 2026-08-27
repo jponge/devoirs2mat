@@ -147,6 +147,11 @@ It exposes further operations:
     - an import whose schema version does not match the one this build of the application produces is refused
       outright rather than partially applied
     - do not split the script by hand on `;` — homework text may legitimately contain one
+    - before a restore runs, the application automatically writes a snapshot of the *current* data to disk first. This
+      is a silent internal safety net only — there is no dedicated UI for it, no button to invoke it, and no history
+      of more than the one most recent snapshot. It exists because a restore of a structurally valid but wrong file
+      (a stale backup, a sibling's export) would otherwise succeed completely and be irreversible. Recovering from an
+      unwanted restore means manually re-importing that snapshot file through the existing import flow
 
 ## Errors and feedback
 
@@ -157,6 +162,9 @@ It exposes further operations:
 - A successful export also shows a toast. Every other write already shows its own result somewhere in the interface —
   a checked box, a renamed course — but an export's only effect is a file landing on disk, so it is the one success
   that needs to say so explicitly
+- An import that commits but then fails to fully refresh the running application (re-resolving the language, reloading
+  the visible data) reports a distinct message from an import that never touched the data at all: the restore itself
+  succeeded, and a restart resolves it
 
 ## What the application doesn't do in any view
 

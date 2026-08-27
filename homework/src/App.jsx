@@ -136,8 +136,9 @@ function App({ startupError = null }) {
   );
 
   // `kind` is always the exact suffix of its own `backup.*` catalog key
-  // (`"exportFailed"`, `"importRefused"`, `"importFailed"`), set that way by
-  // `BackupPanel` precisely so no lookup table has to live here.
+  // (`"exportFailed"`, `"importRefused"`, `"importFailed"`,
+  // `"importSucceededRefreshFailed"`), set that way by `BackupPanel` precisely
+  // so no lookup table has to live here.
   const reportBackupFailure = useCallback(
     (failure, kind) => {
       toast.error(t(`backup.${kind}`));

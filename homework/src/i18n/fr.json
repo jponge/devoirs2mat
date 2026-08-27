@@ -90,6 +90,7 @@
     "exportFailed": "Impossible d’enregistrer ton export.",
     "importRefused": "Ce fichier ne ressemble pas à un export de cette application. Choisis-en un autre.",
     "importFailed": "Impossible de restaurer tes données. Rien n’a changé.",
+    "importSucceededRefreshFailed": "Tes données ont été restaurées, mais l’application n’a pas pu se rafraîchir complètement. Essaie de relancer l’application.",
     "confirmTitle": "Tout remplacer ?",
     "confirmBody": "Ceci remplace tes matières et tes devoirs par ce qu’il y a dans le fichier. Tu ne pourras pas revenir en arrière.",
     "confirmAction": "Importer",

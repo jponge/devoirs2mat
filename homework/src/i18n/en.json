@@ -90,6 +90,7 @@
     "exportFailed": "Couldn’t save your export.",
     "importRefused": "Couldn’t read that file. Choose an export from this app instead.",
     "importFailed": "Couldn’t restore your data. Nothing was changed.",
+    "importSucceededRefreshFailed": "Your data was restored, but the app couldn’t fully refresh. Try restarting the app.",
     "confirmTitle": "Replace everything?",
     "confirmBody": "This replaces your courses and your homework with what’s in the file. You can’t undo this.",
     "confirmAction": "Import",
