@@ -22,6 +22,7 @@ cd homework
 ./scripts/build-macos.sh    # -> a .dmg
 ./scripts/build-windows.sh  # -> an NSIS .exe, cross-compiled via cargo-xwin
 ./scripts/build-linux.sh    # -> an AppImage, built inside a Podman container
+./scripts/clean.sh          # removes build outputs (dist/, src-tauri/target/)
 ```
 
 Each build script prints the path to the installer it produced when it's done. Windows and Linux builds are

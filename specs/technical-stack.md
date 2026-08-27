@@ -484,7 +484,8 @@ against the same `homework.db`.
 There is no CI and no public release process — this is one family's application, and distribution means producing
 one installer per platform from this Mac and handing it over. `homework/scripts/provision.sh` sets up the
 toolchain (idempotent, safe to re-run); `build-macos.sh`, `build-windows.sh` and `build-linux.sh` each produce one
-installer. Every script passes `--bundles <format>` to `tauri build` rather than changing `tauri.conf.json`'s
+installer; `clean.sh` removes `dist/` and `src-tauri/target/`, so every platform's build output, safe to re-run.
+Every script passes `--bundles <format>` to `tauri build` rather than changing `tauri.conf.json`'s
 `bundle.targets` (which stays `"all"`, the honest default for a bare `pnpm tauri build`) — the scripts are what
 curate that down to a single obvious artifact per platform:
 
