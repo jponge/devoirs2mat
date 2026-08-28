@@ -8,6 +8,17 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[profile.release]
+# `thin`, not fat LTO: fat is marginally smaller/faster but noticeably slower to
+# compile, and the Windows cross-build and Linux Podman build are already the
+# slow part of releasing.
+lto = "thin"
+codegen-units = 1
+# Drops the symbol table only — panic messages still print, just without
+# symbolized backtraces, which nobody relies on since this app ships no
+# debugger to end users.
+strip = true
+
 [lib]
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.

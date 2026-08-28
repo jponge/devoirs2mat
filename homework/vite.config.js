@@ -50,6 +50,15 @@ export default defineConfig(async () => ({
   //
   // 1. prevent Vite from obscuring rust errors
   clearScreen: false,
+  // The webview is a fixed, modern engine (WebView2 on Windows, WKWebView on
+  // macOS/Linux), not the general web — these values are Tauri's own
+  // documented Vite target recommendation, letting esbuild skip
+  // transpilation/polyfills for anything newer than that floor.
+  // `TAURI_ENV_PLATFORM` is only set when Vite runs as a hook of `tauri dev`/
+  // `tauri build`; a bare `pnpm dev`/`pnpm build` falls through to `safari13`.
+  build: {
+    target: process.env.TAURI_ENV_PLATFORM == "windows" ? "chrome105" : "safari13",
+  },
   // 2. tauri expects a fixed port, fail if that port is not available
   server: {
     port: 1420,

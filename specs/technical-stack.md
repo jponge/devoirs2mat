@@ -598,6 +598,25 @@ Every `pnpm install` in every build script runs with `CI=true`. Switching betwee
 without it, pnpm refuses to reinstall over that without an interactive confirmation, which a script has no
 terminal to give.
 
+`src-tauri/Cargo.toml` sets `[profile.release]`: `lto = "thin"`, `codegen-units = 1` and `strip = true`, shrinking
+the release binary from 15M to 9.1M on this machine and letting the OS/antivirus scan and load it faster. `thin`
+LTO, not fat (`lto = true`) — fat is marginally smaller/faster still but noticeably slower to compile, and the
+Windows cross-build and Linux Podman build are already the slow part of releasing. `panic = "abort"` was
+considered and deliberately not set: it would shrink the binary further, but Tokio relies on unwinding to isolate
+a panicking async task from crashing the whole process, and this app runs `sqlx`/`tauri-plugin-sql` work on Tokio
+— that's a behavior change, not just a performance one.
+
+`vite.config.js` sets `build.target` to Tauri's own documented recommendation for Vite frontends:
+`process.env.TAURI_ENV_PLATFORM == "windows" ? "chrome105" : "safari13"`. The webview is a fixed, modern engine
+(WebView2 on Windows, WKWebView on macOS, WebKitGTK on Linux) rather than the general web, so esbuild can skip
+transpilation/polyfills below that floor. `TAURI_ENV_PLATFORM` is only set when Vite runs as a hook of `tauri dev`/
+`tauri build` — a bare `pnpm dev`/`pnpm build` always falls through to `safari13`, which is fine since neither is
+how this app is actually shipped or meaningfully run. Confirmed by actually running `pnpm tauri dev` on this
+machine: the value is `darwin`, not `macos` — Tauri derives it from the Rust target triple's OS component (e.g.
+`aarch64-apple-darwin`), not from `std::env::consts::OS`. The ternary only branches on `"windows"` and otherwise
+falls through to `safari13`, which is correct for both `darwin` and `linux` — macOS's WKWebView and Linux's
+WebKitGTK are both WebKit-family, unlike Windows' Chromium-based WebView2.
+
 ## Code layout under `homework/src`
 
 - `components/ui/` — shadcn components, generated, not hand-edited
