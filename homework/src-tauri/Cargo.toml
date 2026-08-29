@@ -1,6 +1,6 @@
 [package]
 name = "homework"
-version = "0.1.0"
+version = "2026.8.29"
 description = "A simple homework management tool for the classroom"
 authors = ["Julien Ponge"]
 license = "LGPL-3.0-only"
