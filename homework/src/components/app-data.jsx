@@ -57,11 +57,10 @@ export function AppDataProvider({
   // quick-add default to it instead of the alphabetically-first course, since
   // a student typically enters several entries for the same course in a row.
   const [lastUsedCourseId, setLastUsedCourseId] = useState(null);
-  const [loading, setLoading] = useState(true);
-  // Sticky, unlike `loading`: true once the first read has settled, and never
-  // false again. `loading` returns to true on every refetch, so a view that used
-  // it to decide whether it has data would blink its empty state away each time
-  // the range changes.
+  // Sticky: true once the first read has settled, and never false again. A
+  // plain read-in-progress flag would flip back to true on every refetch, so a
+  // view that used it to decide whether it has data would blink its empty
+  // state away each time the range changes.
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(null);
   // `src/db/client.js` caches a rejected `Database.load`, so every read after a
@@ -94,7 +93,6 @@ export function AppDataProvider({
   useEffect(() => {
     let cancelled = false;
 
-    setLoading(true);
     Promise.all([listCourses(), listHomeworkBetween(from, to)]).then(
       ([loadedCourses, loadedHomework]) => {
         if (cancelled) {
@@ -106,7 +104,6 @@ export function AppDataProvider({
         setCourses(loadedCourses);
         setHomework(loadedHomework);
         setError(null);
-        setLoading(false);
         setLoaded(true);
       },
       (failure) => {
@@ -118,7 +115,6 @@ export function AppDataProvider({
         // of telling them it broke.
         setError(failure);
         setErrorCount((count) => count + 1);
-        setLoading(false);
         setLoaded(true);
       },
     );
@@ -175,7 +171,6 @@ export function AppDataProvider({
       to,
       courses,
       homework,
-      loading,
       loaded,
       error,
       errorCount,
@@ -194,7 +189,6 @@ export function AppDataProvider({
       to,
       courses,
       homework,
-      loading,
       loaded,
       error,
       errorCount,
