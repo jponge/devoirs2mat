@@ -18,5 +18,10 @@ platform's installer) — safe to re-run, and there's nothing to undo since thes
 `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json`, and syncs `Cargo.lock` to match. See the
 "Versioning" subsection of [`../specs/technical-stack.md`](../specs/technical-stack.md) for the version format.
 
+`./scripts/release.sh <version> [--macos] [--windows] [--linux]` runs the whole release sequence — tests, version
+bump, a local commit and tag, then the requested installer builds (all three with no platform flag) — and prints
+the artifact paths plus the `git push` commands to run once they've been checked to work. It never pushes on its
+own. See the "Cutting a release" subsection of [`../specs/technical-stack.md`](../specs/technical-stack.md).
+
 See [`../specs/`](../specs/) for the technical stack, the functional specifications and the design guidelines, and
 [`../CLAUDE.md`](../CLAUDE.md) for the working conventions.

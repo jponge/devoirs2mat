@@ -500,6 +500,21 @@ that must agree: `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.con
 <version>` sets all three (rejecting anything that isn't unpadded `year.month.day`) and syncs `Cargo.lock`, which
 carries its own copy of the root package's version, by running `cargo check`.
 
+### Cutting a release
+
+`homework/scripts/release.sh <version> [--macos] [--windows] [--linux] [--skip-tests]` runs the whole sequence:
+`pnpm test` and `cargo test` (skippable with `--skip-tests`), `set-version.sh`, a local commit of the version bump
+(`chore: release <version>`, only if the version actually changed), a local annotated tag (`v<version>`, only if
+one doesn't already exist at `HEAD`), and then whichever of `build-macos.sh`/`build-windows.sh`/`build-linux.sh`
+were requested — all three if no platform flag is given.
+
+It never runs `git push` in any form. The commit and the tag are deliberately left local: it prints the exact
+`git push` / `git push origin v<version>` commands at the end, to run by hand once the produced installers have
+actually been checked to work, not before. Re-running it with the same version and no further code changes is
+safe — it reports the version and the tag as already done rather than duplicating either, and simply rebuilds
+whatever platforms were asked for. A tag that already exists on a *different* commit is left alone and reported
+as a conflict rather than moved.
+
 | Platform | Built how | Artifact |
 |---|---|---|
 | macOS | Natively, already on macOS | `.dmg` |
