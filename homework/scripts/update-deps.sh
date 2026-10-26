@@ -51,4 +51,4 @@ check_pair "@tauri-apps/plugin-sql" "tauri-plugin-sql"
 
 echo
 echo "Next: pnpm test, cargo check (from src-tauri/), pnpm tauri dev smoke test."
-echo "If any resolved version in specs/technical-stack.md is now stale, update it too."
+echo "If a version constraint in specs/technical-stack.md no longer holds (e.g. the sqlx pin vs tauri-plugin-sql), update it too."
