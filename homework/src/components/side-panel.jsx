@@ -105,42 +105,48 @@ export function SidePanel({
           <SheetDescription className="sr-only">{t("sidePanel.description")}</SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-col gap-3 px-4">
-          <h3 className="text-sm font-medium">{t("sidePanel.language")}</h3>
-          <div className="flex gap-2">
-            {SUPPORTED_LANGUAGES.map((language) => (
-              <Button
-                key={language}
-                variant={i18n.language === language ? "default" : "outline"}
-                size="sm"
-                aria-pressed={i18n.language === language}
-                onClick={() => choose(language)}
-              >
-                {/* Endonyms: a language is named in its own language in both
-                    catalogs, so the option a French speaker is looking for
-                    still reads "Français" while the interface is in English. */}
-                {t(`language.${language}`)}
-              </Button>
-            ))}
+        {/* The sheet is exactly the window's height, so its content scrolls
+            here, as one region — many courses must never push export/import
+            or the About credit out of reach. Wrapping here rather than on
+            the sheet itself keeps the close button pinned. */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-4">
+          <div className="flex flex-col gap-3 px-4">
+            <h3 className="text-sm font-medium">{t("sidePanel.language")}</h3>
+            <div className="flex gap-2">
+              {SUPPORTED_LANGUAGES.map((language) => (
+                <Button
+                  key={language}
+                  variant={i18n.language === language ? "default" : "outline"}
+                  size="sm"
+                  aria-pressed={i18n.language === language}
+                  onClick={() => choose(language)}
+                >
+                  {/* Endonyms: a language is named in its own language in both
+                      catalogs, so the option a French speaker is looking for
+                      still reads "Français" while the interface is in English. */}
+                  {t(`language.${language}`)}
+                </Button>
+              ))}
+            </div>
           </div>
-        </div>
 
-        <Separator className="my-4" />
+          <Separator className="my-4" />
 
-        <CourseEditor onError={onCourseError} />
+          <CourseEditor onError={onCourseError} />
 
-        <Separator className="my-4" />
+          <Separator className="my-4" />
 
-        <BackupPanel onError={onBackupError} onExportSuccess={onExportSuccess} />
+          <BackupPanel onError={onBackupError} onExportSuccess={onExportSuccess} />
 
-        <Separator className="my-4" />
+          <Separator className="my-4" />
 
-        <div className="flex flex-col gap-3 px-4">
-          <h3 className="text-sm font-medium">{t("about.title")}</h3>
-          <p className="text-sm text-muted-foreground">{t("about.kangarooCredit")}</p>
-          <Button variant="link" className="h-auto justify-start p-0" onClick={openCredit}>
-            {t("about.kangarooCreditLink")}
-          </Button>
+          <div className="flex flex-col gap-3 px-4">
+            <h3 className="text-sm font-medium">{t("about.title")}</h3>
+            <p className="text-sm text-muted-foreground">{t("about.kangarooCredit")}</p>
+            <Button variant="link" className="h-auto justify-start p-0" onClick={openCredit}>
+              {t("about.kangarooCreditLink")}
+            </Button>
+          </div>
         </div>
       </SheetContent>
     </Sheet>

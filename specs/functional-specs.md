@@ -121,6 +121,10 @@ an empty state explaining that a course is needed first, with a button that open
 The side panel is a drawer: hidden by default, opened from a button in the top bar, and dismissed with `Escape` or a
 click outside. The main view therefore always keeps the full window width.
 
+The side panel always spans the window height. When its content is taller than that — many courses, a short
+window — the content scrolls inside the panel as a single region, so that every section, exporting and importing
+data and the About credit included, stays reachable. The panel's close button does not scroll with it.
+
 It exposes further operations:
 
 - changing the current language

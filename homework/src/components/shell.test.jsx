@@ -416,6 +416,31 @@ describe("the side panel", () => {
     await waitFor(() => expect(screen.queryByText(en.sidePanel.language)).toBeNull());
   });
 
+  // jsdom computes no layout, so this pins the wiring, not the scrolling itself:
+  // one scroll region holding every section, the close button outside it.
+  it("scrolls its content as a single region, the close button outside it", async () => {
+    await mount();
+    openPanel();
+    await waitFor(() => expect(screen.getByText(en.sidePanel.language)).not.toBeNull());
+
+    const overflow = /overflow-(y-)?(auto|scroll)/;
+    const panel = document.querySelector('[data-slot="sheet-content"]');
+    expect(panel.className).not.toMatch(overflow);
+    const regions = [...panel.querySelectorAll("*")].filter((element) =>
+      overflow.test(element.getAttribute("class") ?? "")
+    );
+    expect(regions).toHaveLength(1);
+
+    const [region] = regions;
+    expect(region.contains(screen.getByText(en.sidePanel.language))).toBe(true);
+    expect(region.contains(screen.getByRole("button", { name: en.backup.export }))).toBe(true);
+    expect(region.contains(screen.getByRole("button", { name: en.backup.import }))).toBe(true);
+    expect(region.contains(screen.getByText(en.about.title))).toBe(true);
+    const close = panel.querySelector('[data-slot="sheet-close"]');
+    expect(close).not.toBeNull();
+    expect(region.contains(close)).toBe(false);
+  });
+
   it("switches the language, immediately and with no restart", async () => {
     await mount();
     openPanel();
