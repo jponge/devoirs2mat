@@ -37,8 +37,9 @@ pub fn run() {
         )
         // The migrations are attached to the database URL here; the plugin runs
         // any that are outstanding when the connection is first loaded. The
-        // `sqlite:` prefix makes the path relative to the application data
-        // directory, so the file lives beside the rest of the application state.
+        // `sqlite:` prefix makes the path relative to the application *config*
+        // directory (`app_config_dir()`), not the data directory. They are the
+        // same path on macOS and Windows and different on Linux.
         .plugin(
             tauri_plugin_sql::Builder::default()
                 .add_migrations("sqlite:homework.db", migrations::migrations())
