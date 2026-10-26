@@ -798,11 +798,13 @@ describe("a failing homework write in the weekly view", () => {
   // this path was previously invisible to the suite.
   it("toasts through the weekly-view chain rather than failing silently", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
-    listHomeworkBetween.mockResolvedValue([
+    // `from` rather than a hard-coded date: the weekly view only renders the
+    // week around the real local date, see `seedOneEntry` below.
+    listHomeworkBetween.mockImplementation(async (from) => [
       {
         id: 1,
         text: "Exercice 4 page 12",
-        due_date: "2026-08-25",
+        due_date: from,
         course_id: 1,
         done: 0,
         created_at: "2026-08-20T08:00:00Z",
